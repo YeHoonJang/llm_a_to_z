@@ -1,3 +1,4 @@
+.dockerignore/
 .idea/
 flagged/
 outputs/
