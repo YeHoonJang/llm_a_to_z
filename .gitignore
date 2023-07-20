@@ -1,4 +1,4 @@
-free_note*.*
+*free_note*.*
 .ipynb*/
 .dockerignore
 .idea/
