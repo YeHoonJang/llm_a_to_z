@@ -4,7 +4,7 @@ import os
 import pandas as pd
 from datasets import load_dataset
 
-data_path = "/home/yehoon/workspace/llm_a_to_z/llama_2/total.csv"
+data_path = "/home/yehoon/workspace/llm_a_to_z/llama_2/test_10.csv"
 
 df = pd.read_csv(data_path)
 df = df.fillna("")
@@ -24,4 +24,4 @@ for _, row in df.iterrows():
     text_col.append(text)
 df.loc[:, "text"] = text_col
 
-df.to_csv("/home/yehoon/workspace/llm_a_to_z/llama_2/train.csv", index=False)
+df.to_csv("/home/yehoon/workspace/llm_a_to_z/llama_2/test.csv", index=False)
