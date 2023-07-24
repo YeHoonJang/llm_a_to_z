@@ -2,6 +2,7 @@ import os
 import sys
 from typing import List
 
+import pdb
 import fire
 import torch
 import transformers
@@ -210,20 +211,25 @@ def train(
             print(f"Checkpoint {checkpoint_name} not found")
 
     model.print_trainable_parameters()  # Be more transparent about the % of trainable params.
-
+    pdb.set_trace()
     if val_set_size > 0:
         train_val = data["train"].train_test_split(
             test_size=val_set_size, shuffle=True, seed=42
         )
+        pdb.set_trace()
         train_data = (
             train_val["train"].shuffle().map(generate_and_tokenize_prompt)
         )
+        pdb.set_trace()
         val_data = (
             train_val["test"].shuffle().map(generate_and_tokenize_prompt)
         )
+        pdb.set_trace()
     else:
+        pdb.set_trace()
         train_data = data["train"].shuffle().map(generate_and_tokenize_prompt)
         val_data = None
+        pdb.set_trace()
 
     if not ddp and torch.cuda.device_count() > 1:
         # keeps Trainer from trying its own DataParallelism when more than 1 gpu is available

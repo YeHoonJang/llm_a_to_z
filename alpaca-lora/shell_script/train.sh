@@ -11,8 +11,8 @@
 
 python finetune.py \
 --base_model 'decapoda-research/llama-7b-hf' \
---data_path "data/alpaca_data.json" \
---output_dir "./outputs/llama_7b_alpaca" \
+--data_path "../data/alpaca_data.json" \
+--output_dir "../outputs/llama_7b_alpaca" \
 --num_epochs 3 \
 --learning_rate 5e-4 \
 --val_set_size 2000 \
