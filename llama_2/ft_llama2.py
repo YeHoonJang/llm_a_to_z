@@ -12,15 +12,15 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, set_seed, Trainer,
 
 
 # Download Model
-def load_model(model_name, bnb_config):
+def load_model(opt, model_name, bnb_config):
     n_gpus = torch.cuda.device_count()
-    max_memory = f"{40960}MB"
+    max_memory = f"{opt.max_memory}MB"
 
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
         quantization_config=bnb_config,
-        device_map="auto",
-        max_memory={i: max_memory for i in range(n_gpus)}
+        device_map=opt.device_map,
+        # max_memory={i: max_memory for i in range(n_gpus)}
     )
     tokenizer = AutoTokenizer.from_pretrained(model_name)
 
@@ -28,14 +28,6 @@ def load_model(model_name, bnb_config):
     tokenizer.pad_token = tokenizer.eos_token
 
     return model, tokenizer
-
-
-# Download Dataset
-dataset = load_dataset("databricks/databricks-dolly-15k", split="train")
-
-# Explore Dataset
-print(f"Number of prompts: {len(dataset)}")
-print(f"Column names are: {dataset.column_names}")
 
 
 # Pre-processing Dataset
@@ -126,16 +118,16 @@ def create_bnb_config():
     return bnb_config
 
 
-def create_peft_config(modules):
+def create_peft_config(opt, modules):
     """
     Create Parameter-Efficient Fine-Tuning config for your model
     :param modules: Names of the modules to apply Lora to
     """
     config = LoraConfig(
-        r=4,  # dimension of the updated matrices
-        lora_alpha=8,  # parameter for scaling
+        r=opt.lora_r,  # dimension of the updated matrices
+        lora_alpha=opt.lora_alpha,  # parameter for scaling
         target_modules=modules,
-        lora_dropout=0.1,  # dropout probability for layers
+        lora_dropout=opt.lora_dropout,  # dropout probability for layers
         bias="none",
         task_type="CAUSAL_LM",
     )
@@ -180,22 +172,7 @@ def print_trainable_parameters(model, use_4bit=False):
 
 
 # Train
-
-# Load model from HF with user's token and with bitsandbytes config
-model_name = "meta-llama/Llama-2-7b-hf"
-
-bnb_config = create_bnb_config()
-
-model, tokenizer = load_model(model_name, bnb_config)
-
-# Preprocess dataset
-
-max_length = get_max_length(model)
-
-dataset = preprocess_dataset(tokenizer, max_length, 42, dataset)
-
-
-def train(model, tokenizer, dataset, output_dir):
+def train(opt, model, tokenizer, dataset, output_dir):
     # Apply preprocessing to the model to prepare it by
     # 1 - Enabling gradient checkpointing to reduce memory usage during fine-tuning
     model.gradient_checkpointing_enable()
@@ -207,7 +184,7 @@ def train(model, tokenizer, dataset, output_dir):
     modules = find_all_linear_names(model)
 
     # Create PEFT config for these modules and wrap the model to PEFT
-    peft_config = create_peft_config(modules)
+    peft_config = create_peft_config(opt, modules)
     model = get_peft_model(model, peft_config)
 
     # Print information about the percentage of trainable parameters
@@ -219,16 +196,16 @@ def train(model, tokenizer, dataset, output_dir):
         model=model,
         train_dataset=dataset,
         args=TrainingArguments(
-            per_device_train_batch_size=1,
-            gradient_accumulation_steps=4,
-            warmup_steps=2,
-            num_train_epochs=3,
+            per_device_train_batch_size=opt.batch_size,
+            gradient_accumulation_steps=opt.gradient_step,
+            warmup_steps=opt.warmup,
+            num_train_epochs=opt.epoch,
             #             max_steps=20,
-            learning_rate=2e-4,
+            learning_rate=opt.lr,
             fp16=True,
             logging_steps=1,
             output_dir="outputs",
-            optim="paged_adamw_8bit",
+            optim=opt.optimizer,
         ),
         data_collator=DataCollatorForLanguageModeling(tokenizer, mlm=False)
     )
@@ -273,14 +250,50 @@ def train(model, tokenizer, dataset, output_dir):
     torch.cuda.empty_cache()
 
 
-output_dir = "../results/llama2/final_checkpoint"
-train(model, tokenizer, dataset, output_dir)
-
 def main():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--")
-    pass
+    parser.add_argument("--model", type=str, required=True, help="Model Name (e.g., 'meta/llama-2-7b')")
+    parser.add_argument("--dataset", type=str, required=True,
+                        help="Dataset Name (e.g., 'wikipedia', 'tatsu-lab/alpaca')")
+    parser.add_argument("--output_dir", type=str, required=True, help="Path where output saved")
+    parser.add_argument("--output_name", type=str, required=True, help="Name of the output directory")
+
+    parser.add_argument("--lora_r", type=int, default=8, help="LoRA R: Dimension of the updated matrices")
+    parser.add_argument("--lora_alpha", type=int, default=16, help="LoRA Alpha: Parameter for scaling")
+    parser.add_argument("--lora_dropout", type=float, default=0.05, help="LoRA Dropout: Dropout probability for layers")
+
+    parser.add_argument("--batch_size", type=int, default=1, help="Batch size per device")
+    parser.add_argument("--epoch", type=int, default=3, help="Train epoch")
+    parser.add_argument("--gradient_step", type=int, default=1, help="Gradient accumulation step")
+    parser.add_argument("--warmup", type=int, default=2, help="Warmup step")
+    parser.add_argument("--lr", type=float, default=5e-4, help="Learning rate")
+    parser.add_argument("--optimizer", type=str, default="paged_adamw_8bit", help="Optimizer")
+
+    parser.add_argument("--max_memory", type=int, default=10240, help="Maximum of GPU's Memory")
+    parser.add_argument("--device_map", type=str, default='auto',
+                        help="Device (e.g., 'cpu', 'cuda:1', 'mps', or a GPU ordinal rank like 1)")
+    parser.add_argument("--seed", type=int, default=42, help="Random Seed")
+
+    opt = parser.parse_args()
+
+    # Download Dataset
+    dataset = load_dataset(opt.dataset, split="train")
+
+    # Explore Dataset
+    print(f"Number of prompts: {len(dataset)}")
+    print(f"Column names are: {dataset.column_names}")
+
+    model_name = opt.model
+
+    bnb_config = create_bnb_config()
+    model, tokenizer = load_model(opt, model_name, bnb_config)
+
+    # Preprocess dataset
+    max_length = get_max_length(model)
+    dataset = preprocess_dataset(tokenizer, max_length, opt.seed, dataset)
+
+    train(opt, model, tokenizer, dataset, opt.output_dir)
 
 
 if __name__ == "__main__":
