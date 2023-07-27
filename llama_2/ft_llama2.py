@@ -20,7 +20,7 @@ def load_model(opt, model_name, bnb_config):
         model_name,
         quantization_config=bnb_config,
         device_map=opt.device_map,
-        # max_memory={i: max_memory for i in range(n_gpus)}
+        max_memory={i: max_memory for i in range(n_gpus)}
     )
     tokenizer = AutoTokenizer.from_pretrained(model_name)
 
@@ -59,7 +59,7 @@ def get_max_length(model):
     for length_setting in ["n_positions", "max_position_embeddings", "seq_length"]:
         max_length = getattr(model.config, length_setting, None)
         if max_length:
-            print(f"Found max lenth: {max_length}")
+            print(f"Found max length: {max_length}")
             break
     if not max_length:
         max_length = 1024
@@ -78,14 +78,12 @@ def preprocess_batch(batch, tokenizer, max_length):
     )
 
 
-def preprocess_dataset(tokenizer: AutoTokenizer, max_length: int, seed, dataset: str):
-    """Format & tokenize it so it is ready for training
-    :param tokenizer (AutoTokenizer): Model Tokenizer
-    :param max_length (int): Maximum number of tokens to emit from tokenizer
-    """
+def preprocess_dataset(tokenizer: AutoTokenizer, max_length: int, seed, dataset):
 
     # Add prompt to each sample
     print("Preprocessing dataset...")
+
+
     dataset = dataset.map(create_prompt_formats)  # , batched=True)
 
     # Apply preprocessing to each batch of the dataset & and remove 'instruction', 'context', 'response', 'category'
@@ -173,6 +171,11 @@ def print_trainable_parameters(model, use_4bit=False):
 
 # Train
 def train(opt, model, tokenizer, dataset, output_dir):
+
+    # Push to HF
+    MODEL_SAVE_REPO = 'my_llama2-dolly'
+    HUGGINGFACE_AUTO_TOKEN = "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"
+
     # Apply preprocessing to the model to prepare it by
     # 1 - Enabling gradient checkpointing to reduce memory usage during fine-tuning
     model.gradient_checkpointing_enable()
@@ -199,12 +202,12 @@ def train(opt, model, tokenizer, dataset, output_dir):
             per_device_train_batch_size=opt.batch_size,
             gradient_accumulation_steps=opt.gradient_step,
             warmup_steps=opt.warmup,
-            num_train_epochs=opt.epoch,
-            #             max_steps=20,
+            # num_train_epochs=opt.epoch,
+            max_steps=opt.max_step,
             learning_rate=opt.lr,
             fp16=True,
             logging_steps=1,
-            output_dir="outputs",
+            output_dir=output_dir,
             optim=opt.optimizer,
         ),
         data_collator=DataCollatorForLanguageModeling(tokenizer, mlm=False)
@@ -217,10 +220,12 @@ def train(opt, model, tokenizer, dataset, output_dir):
     dtypes = {}
     for _, p in model.named_parameters():
         dtype = p.dtype
-        if dtype not in dtypes: dtypes[dtype] = 0
+        if dtype not in dtypes:
+            dtypes[dtype] = 0
         dtypes[dtype] += p.numel()
     total = 0
-    for k, v in dtypes.items(): total += v
+    for k, v in dtypes.items():
+        total += v
     for k, v in dtypes.items():
         print(k, v, v / total)
 
@@ -241,8 +246,20 @@ def train(opt, model, tokenizer, dataset, output_dir):
 
     # Saving model
     print("Saving last checkpoint of the model...")
-    os.makedirs(output_dir, exist_ok=True)
-    trainer.model.save_pretrained(output_dir)
+    # os.makedirs(output_dir, exist_ok=True)
+    # trainer.model.save_pretrained(output_dir)
+    # trainer.save_model(output_dir)
+
+    model.push_to_hub(
+        MODEL_SAVE_REPO,
+        use_temp_dir=True,
+        use_auth_token=HUGGINGFACE_AUTO_TOKEN
+    )
+    tokenizer.push_to_hub(
+        MODEL_SAVE_REPO,
+        use_temp_dir=True,
+        use_auth_token=HUGGINGFACE_AUTO_TOKEN
+    )
 
     # Free memory for merging weights
     del model
@@ -250,8 +267,20 @@ def train(opt, model, tokenizer, dataset, output_dir):
     torch.cuda.empty_cache()
 
 
+def inference(opt, model, tokenizer, test_dataset, output_dir, max_length):
+    print("Inferencing...")
+    for i in test_dataset["input_ids"]:
+        output = model.generate(i, max_length=max_length, temperature=opt.temperature, top_k=opt.top_k, top_p=opt.top_p)
+        decoded_output = tokenizer.decode(output[0], skip_special_tokens=True)
+        print(decoded_output)
+
+
 def main():
+    torch.cuda.empty_cache()
     parser = argparse.ArgumentParser()
+
+    parser.add_argument("--train", action='store_true')
+    parser.add_argument("--inference", action='store_true')
 
     parser.add_argument("--model", type=str, required=True, help="Model Name (e.g., 'meta/llama-2-7b')")
     parser.add_argument("--dataset", type=str, required=True,
@@ -265,10 +294,15 @@ def main():
 
     parser.add_argument("--batch_size", type=int, default=1, help="Batch size per device")
     parser.add_argument("--epoch", type=int, default=3, help="Train epoch")
-    parser.add_argument("--gradient_step", type=int, default=1, help="Gradient accumulation step")
+    parser.add_argument("--max_step", type=int, default=15, help="Max step")
+    parser.add_argument("--gradient_step", type=int, default=4, help="Gradient accumulation step")
     parser.add_argument("--warmup", type=int, default=2, help="Warmup step")
-    parser.add_argument("--lr", type=float, default=5e-4, help="Learning rate")
+    parser.add_argument("--lr", type=float, default=2e-4, help="Learning rate")
     parser.add_argument("--optimizer", type=str, default="paged_adamw_8bit", help="Optimizer")
+
+    parser.add_argument("--temperature", type=float, default=0.7, help="Generation temperature range 0.0~1.0")
+    parser.add_argument("--top_k", type=int, default=50, help="Top kth words")
+    parser.add_argument("--top_p", type=int, default=0.95, help="Top probability words")
 
     parser.add_argument("--max_memory", type=int, default=10240, help="Maximum of GPU's Memory")
     parser.add_argument("--device_map", type=str, default='auto',
@@ -279,22 +313,46 @@ def main():
 
     # Download Dataset
     dataset = load_dataset(opt.dataset, split="train")
+    dataset = dataset.train_test_split(test_size=0.2, shuffle=True)
+    train_dataset = dataset["train"]
+    test_dataset = dataset["test"]
 
     # Explore Dataset
-    print(f"Number of prompts: {len(dataset)}")
-    print(f"Column names are: {dataset.column_names}")
+    print(f"[Train] Number of prompts: {len(train_dataset)}")
+    print(f"[Train] Column names are: {train_dataset.column_names}")
 
-    model_name = opt.model
+    print(f"[Test] Number of prompts: {len(test_dataset)}")
+    print(f"[Test] Column names are: {test_dataset.column_names}")
 
-    bnb_config = create_bnb_config()
-    model, tokenizer = load_model(opt, model_name, bnb_config)
 
-    # Preprocess dataset
-    max_length = get_max_length(model)
-    dataset = preprocess_dataset(tokenizer, max_length, opt.seed, dataset)
+    if opt.train:
+        model_name = opt.model
 
-    train(opt, model, tokenizer, dataset, opt.output_dir)
+        bnb_config = create_bnb_config()
+        model, tokenizer = load_model(opt, model_name, bnb_config)
 
+        # Preprocess dataset
+        max_length = get_max_length(model)
+        train_dataset = preprocess_dataset(tokenizer, max_length, opt.seed, train_dataset)
+        output_dir = os.path.join(opt.output_dir, opt.output_name)
+
+        train(opt, model, tokenizer, train_dataset, output_dir)
+
+    elif opt.inference:
+        output_dir = os.path.join(opt.output_dir, opt.output_name)
+        model_name = output_dir
+
+        bnb_config = create_bnb_config()
+        ### 여기
+        model, tokenizer = load_model(opt, model_name, bnb_config)
+        print(4)
+        # Preprocess dataset
+        max_length = get_max_length(model)
+        print(5)
+        test_dataset = preprocess_dataset(tokenizer, max_length, opt.seed, test_dataset)
+        print(6)
+        inference(opt, model, tokenizer, test_dataset, output_dir, max_length)
+        print(7)
 
 if __name__ == "__main__":
     main()
