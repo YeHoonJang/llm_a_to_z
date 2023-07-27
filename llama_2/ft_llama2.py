@@ -173,7 +173,7 @@ def print_trainable_parameters(model, use_4bit=False):
 def train(opt, model, tokenizer, dataset, output_dir):
 
     # Push to HF
-    MODEL_SAVE_REPO = 'my_llama2-dolly'
+    MODEL_SAVE_REPO = 'Yehoon/my_llama2-dolly'
     HUGGINGFACE_AUTO_TOKEN = "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"
 
     # Apply preprocessing to the model to prepare it by
