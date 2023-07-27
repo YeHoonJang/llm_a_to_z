@@ -174,7 +174,7 @@ def train(opt, model, tokenizer, dataset, output_dir):
 
     # Push to HF
     MODEL_SAVE_REPO = 'Yehoon/my_llama2-dolly'
-    HUGGINGFACE_AUTO_TOKEN = "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"
+    HUGGINGFACE_AUTO_TOKEN = "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"
 
     # Apply preprocessing to the model to prepare it by
     # 1 - Enabling gradient checkpointing to reduce memory usage during fine-tuning
