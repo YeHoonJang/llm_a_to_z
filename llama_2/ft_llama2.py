@@ -1,14 +1,28 @@
 import os
 import argparse
+import logging
+
+import pandas as pd
 import torch
 
+
+from tqdm import tqdm
 import bitsandbytes as bnb
 
 from datasets import load_dataset
 from functools import partial
-from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training, AutoPeftModelForCausalLM
-from transformers import AutoModelForCausalLM, AutoTokenizer, set_seed, Trainer, TrainingArguments, BitsAndBytesConfig, \
-    DataCollatorForLanguageModeling
+from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training, AutoPeftModelForCausalLM, PeftModel
+from transformers import AutoModelForCausalLM, AutoTokenizer, set_seed, Trainer, TrainingArguments, BitsAndBytesConfig,\
+    DataCollatorForLanguageModeling, GenerationConfig, EarlyStoppingCallback
+
+torch.cuda.empty_cache()
+
+logging.getLogger('codecarbon').setLevel(logging.ERROR)
+
+if torch.cuda.is_available():
+    device = "cuda"
+else:
+    device = "cpu"
 
 
 # Download Model
@@ -78,25 +92,32 @@ def preprocess_batch(batch, tokenizer, max_length):
     )
 
 
-def preprocess_dataset(tokenizer: AutoTokenizer, max_length: int, seed, dataset):
+def preprocess_dataset(opt, tokenizer: AutoTokenizer, max_length: int, seed, dataset):
 
     # Add prompt to each sample
     print("Preprocessing dataset...")
 
 
     dataset = dataset.map(create_prompt_formats)  # , batched=True)
+    if opt.train:
+        # Apply preprocessing to each batch of the dataset & and remove 'instruction', 'context', 'response', 'category'
+        # fields
+        _preprocessing_function = partial(preprocess_batch, max_length=max_length, tokenizer=tokenizer)
+        dataset = dataset.map(
+            _preprocessing_function,
+            batched=True,
+            remove_columns=["instruction", "context", "response", "text", "category"],
+        )
 
-    # Apply preprocessing to each batch of the dataset & and remove 'instruction', 'context', 'response', 'category'
-    # fields
-    _preprocessing_function = partial(preprocess_batch, max_length=max_length, tokenizer=tokenizer)
-    dataset = dataset.map(
-        _preprocessing_function,
-        batched=True,
-        remove_columns=["instruction", "context", "response", "text", "category"],
-    )
-
-    # Filter out samples that have input_ids exceeding max_length
-    dataset = dataset.filter(lambda sample: len(sample["input_ids"]) < max_length)
+        # Filter out samples that have input_ids exceeding max_length
+        dataset = dataset.filter(lambda sample: len(sample["input_ids"]) < max_length)
+    elif opt.inference:
+        _preprocessing_function = partial(preprocess_batch, max_length=max_length, tokenizer=tokenizer)
+        dataset = dataset.map(
+            _preprocessing_function,
+            batched=True,
+            remove_columns=["instruction", "context", "response", "category"],
+        )
 
     # Shuffle dataset
     dataset = dataset.shuffle(seed=seed)
@@ -170,11 +191,7 @@ def print_trainable_parameters(model, use_4bit=False):
 
 
 # Train
-def train(opt, model, tokenizer, dataset, output_dir):
-
-    # Push to HF
-    MODEL_SAVE_REPO = 'my_llama2-dolly'
-    HUGGINGFACE_AUTO_TOKEN = "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"
+def train(opt, model, tokenizer, train_dataset, valid_datset, output_dir):
 
     # Apply preprocessing to the model to prepare it by
     # 1 - Enabling gradient checkpointing to reduce memory usage during fine-tuning
@@ -194,10 +211,10 @@ def train(opt, model, tokenizer, dataset, output_dir):
     print_trainable_parameters(model)
 
     # Training parameters
-
     trainer = Trainer(
         model=model,
-        train_dataset=dataset,
+        train_dataset=train_dataset,
+        eval_dataset=valid_datset,
         args=TrainingArguments(
             per_device_train_batch_size=opt.batch_size,
             gradient_accumulation_steps=opt.gradient_step,
@@ -206,11 +223,18 @@ def train(opt, model, tokenizer, dataset, output_dir):
             max_steps=opt.max_step,
             learning_rate=opt.lr,
             fp16=True,
-            logging_steps=1,
+            logging_steps=int(len(train_dataset)*0.001),
             output_dir=output_dir,
             optim=opt.optimizer,
+            load_best_model_at_end=True,
+            evaluation_strategy="steps",
+            save_strategy="steps",
+            eval_steps=5,
+            save_steps=10,
+            run_name=opt.wandb,
         ),
-        data_collator=DataCollatorForLanguageModeling(tokenizer, mlm=False)
+        data_collator=DataCollatorForLanguageModeling(tokenizer, mlm=False),
+        callbacks=[EarlyStoppingCallback(early_stopping_patience=1)]
     )
 
     model.config.use_cache = False  # re-enable for inference to speed up predictions for similar inputs
@@ -246,20 +270,21 @@ def train(opt, model, tokenizer, dataset, output_dir):
 
     # Saving model
     print("Saving last checkpoint of the model...")
-    # os.makedirs(output_dir, exist_ok=True)
-    # trainer.model.save_pretrained(output_dir)
-    # trainer.save_model(output_dir)
+    os.makedirs(output_dir, exist_ok=True)
+    trainer.model.save_pretrained(output_dir)
+    trainer.save_model(output_dir)
 
-    model.push_to_hub(
-        MODEL_SAVE_REPO,
-        use_temp_dir=True,
-        use_auth_token=HUGGINGFACE_AUTO_TOKEN
-    )
-    tokenizer.push_to_hub(
-        MODEL_SAVE_REPO,
-        use_temp_dir=True,
-        use_auth_token=HUGGINGFACE_AUTO_TOKEN
-    )
+    # # Merge weights
+    # model = AutoPeftModelForCausalLM.from_pretrained(output_dir, device_map=opt.device_map, torch_dtype=torch.bfloat16)
+    # model = model.merge_and_unload()
+    #
+    # output_merged_dir = os.path.join(opt.output_dir, "merged_"+(str(opt.output_name)))
+    # os.makedirs(output_merged_dir, exist_ok=True)
+    # model.save_pretrained(output_merged_dir, safe_serialization=True)
+
+    # # save tokenizer for easy inference
+    # tokenizer = AutoTokenizer.from_pretrained(opt.model)
+    # tokenizer.save_pretrained(output_merged_dir)
 
     # Free memory for merging weights
     del model
@@ -268,11 +293,32 @@ def train(opt, model, tokenizer, dataset, output_dir):
 
 
 def inference(opt, model, tokenizer, test_dataset, output_dir, max_length):
+    df = pd.DataFrame(columns=["text"])
+    generated = []
+
+    generation_config = GenerationConfig(
+        temperature=opt.temperature,
+        top_p=opt.top_p,
+        top_k=opt.top_k,
+    )
     print("Inferencing...")
-    for i in test_dataset["input_ids"]:
-        output = model.generate(i, max_length=max_length, temperature=opt.temperature, top_k=opt.top_k, top_p=opt.top_p)
-        decoded_output = tokenizer.decode(output[0], skip_special_tokens=True)
-        print(decoded_output)
+    for i in tqdm(test_dataset["text"]):
+        inputs = tokenizer(i, return_tensors="pt")
+        input_ids = inputs["input_ids"].to(device)
+
+        output = model.generate(
+            input_ids=input_ids,
+            generation_config=generation_config,
+            return_dict_in_generate=True,
+            max_new_tokens=256
+        )
+        s = output.sequences[0]
+        decoded_output = tokenizer.decode(s, skip_special_tokens=True)
+        generated.append(decoded_output)
+
+        # print(decoded_output)
+    df = pd.concat([df, pd.DataFrame(generated)])
+    df.to_csv(os.path.join(opt.output_dir, "generated_output.csv"), index=False)
 
 
 def main():
@@ -287,6 +333,7 @@ def main():
                         help="Dataset Name (e.g., 'wikipedia', 'tatsu-lab/alpaca')")
     parser.add_argument("--output_dir", type=str, required=True, help="Path where output saved")
     parser.add_argument("--output_name", type=str, required=True, help="Name of the output directory")
+    parser.add_argument("--wandb", type=str, required=True, help="Name of the W&B run")
 
     parser.add_argument("--lora_r", type=int, default=8, help="LoRA R: Dimension of the updated matrices")
     parser.add_argument("--lora_alpha", type=int, default=16, help="LoRA Alpha: Parameter for scaling")
@@ -312,20 +359,17 @@ def main():
     opt = parser.parse_args()
 
     # Download Dataset
-    dataset = load_dataset(opt.dataset, split="train")
-    dataset = dataset.train_test_split(test_size=0.2, shuffle=True)
-    train_dataset = dataset["train"]
-    test_dataset = dataset["test"]
-
-    # Explore Dataset
-    print(f"[Train] Number of prompts: {len(train_dataset)}")
-    print(f"[Train] Column names are: {train_dataset.column_names}")
-
-    print(f"[Test] Number of prompts: {len(test_dataset)}")
-    print(f"[Test] Column names are: {test_dataset.column_names}")
-
+    train_dataset = load_dataset(opt.dataset, split="train[:80%]")
+    valid_datset = load_dataset(opt.dataset, split="train[80%:95%]")
+    test_dataset = load_dataset(opt.dataset, split="train[95%:]")
 
     if opt.train:
+        print(f"[Train] Number of prompts: {len(train_dataset)}")
+        print(f"[Validation] Number of prompts: {len(valid_datset)}")
+
+        print(f"[Train] Column names are: {train_dataset.column_names}")
+        print(f"[Validation] Column names are: {valid_datset.column_names}")
+
         model_name = opt.model
 
         bnb_config = create_bnb_config()
@@ -333,26 +377,39 @@ def main():
 
         # Preprocess dataset
         max_length = get_max_length(model)
-        train_dataset = preprocess_dataset(tokenizer, max_length, opt.seed, train_dataset)
+        train_dataset = preprocess_dataset(opt, tokenizer, max_length, opt.seed, train_dataset)
+        valid_dataset = preprocess_dataset(opt, tokenizer, max_length, opt.seed, valid_datset)
         output_dir = os.path.join(opt.output_dir, opt.output_name)
 
-        train(opt, model, tokenizer, train_dataset, output_dir)
+        train(opt, model, tokenizer, train_dataset, valid_dataset, output_dir)
 
     elif opt.inference:
+        print(f"[Test] Number of prompts: {len(test_dataset)}")
+        print(f"[Test] Column names are: {test_dataset.column_names}")
+        model_name = opt.model
         output_dir = os.path.join(opt.output_dir, opt.output_name)
-        model_name = output_dir
 
-        bnb_config = create_bnb_config()
-        ### 여기
-        model, tokenizer = load_model(opt, model_name, bnb_config)
-        print(4)
-        # Preprocess dataset
+        lora_weights = output_dir
+
+        model = AutoModelForCausalLM.from_pretrained(
+            model_name,
+            load_in_4bit=False,
+            torch_dtype=torch.float16,
+            device_map=opt.device_map,
+        )
+        model = PeftModel.from_pretrained(
+                model,
+                lora_weights,
+                torch_dtype=torch.float16,
+        )
+
+        tokenizer = AutoTokenizer.from_pretrained(opt.model)
+        tokenizer.pad_token = tokenizer.eos_token
+
         max_length = get_max_length(model)
-        print(5)
-        test_dataset = preprocess_dataset(tokenizer, max_length, opt.seed, test_dataset)
-        print(6)
+        test_dataset = preprocess_dataset(opt, tokenizer, max_length, opt.seed, test_dataset)
         inference(opt, model, tokenizer, test_dataset, output_dir, max_length)
-        print(7)
+
 
 if __name__ == "__main__":
     main()
