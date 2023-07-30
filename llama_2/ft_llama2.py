@@ -45,7 +45,7 @@ def load_model(opt, model_name, bnb_config):
 
 
 # Pre-processing Dataset
-def create_prompt_formats(sample):
+def create_prompt_formats(opt, sample):
     INTRO_BLURB = "Below is an instruction that describes a task. Write a response that appropriately completes the request."
     INSTRUCTION_KEY = "### Instruction:"
     INPUT_KEY = "Input:"
@@ -56,9 +56,13 @@ def create_prompt_formats(sample):
     instruction = f"{INSTRUCTION_KEY}\n{sample['instruction']}"
     input_context = f"{INPUT_KEY}\n{sample['context']}" if sample["context"] else None
     response = f"{RESPONSE_KEY}\n{sample['response']}"
+    inference_response = f"{RESPONSE_KEY}\n"
     end = f"{END_KEY}"
 
-    parts = [part for part in [blurb, instruction, input_context, response, end] if part]
+    if opt.train:
+        parts = [part for part in [blurb, instruction, input_context, response, end] if part]
+    elif opt.inference:
+        parts = [part for part in [blurb, instruction, input_context, inference_response] if part]
 
     formatted_prompt = "\n\n".join(parts)
 
@@ -97,8 +101,8 @@ def preprocess_dataset(opt, tokenizer: AutoTokenizer, max_length: int, seed, dat
     # Add prompt to each sample
     print("Preprocessing dataset...")
 
-
-    dataset = dataset.map(create_prompt_formats)  # , batched=True)
+    _create_prompt_formats = partial(create_prompt_formats, opt)
+    dataset = dataset.map(_create_prompt_formats)  # , batched=True)
     if opt.train:
         # Apply preprocessing to each batch of the dataset & and remove 'instruction', 'context', 'response', 'category'
         # fields
@@ -118,9 +122,11 @@ def preprocess_dataset(opt, tokenizer: AutoTokenizer, max_length: int, seed, dat
             batched=True,
             remove_columns=["instruction", "context", "response", "category"],
         )
+        pd.DataFrame(dataset).to_csv(os.path.join(opt.output_dir, "test_dataset_1.csv"), index=False)
+
 
     # Shuffle dataset
-    dataset = dataset.shuffle(seed=seed)
+    # dataset = dataset.shuffle(seed=seed)
 
     return dataset
 
@@ -226,15 +232,15 @@ def train(opt, model, tokenizer, train_dataset, valid_datset, output_dir):
             logging_steps=int(len(train_dataset)*0.001),
             output_dir=output_dir,
             optim=opt.optimizer,
-            load_best_model_at_end=True,
-            evaluation_strategy="steps",
-            save_strategy="steps",
-            eval_steps=5,
-            save_steps=10,
+            # load_best_model_at_end=True,
+            # evaluation_strategy="steps",
+            # save_strategy="steps",
+            # eval_steps=5,
+            # save_steps=10,
             run_name=opt.wandb,
         ),
         data_collator=DataCollatorForLanguageModeling(tokenizer, mlm=False),
-        callbacks=[EarlyStoppingCallback(early_stopping_patience=1)]
+        # callbacks=[EarlyStoppingCallback(early_stopping_patience=1)]
     )
 
     model.config.use_cache = False  # re-enable for inference to speed up predictions for similar inputs
@@ -302,8 +308,9 @@ def inference(opt, model, tokenizer, test_dataset, output_dir, max_length):
         top_k=opt.top_k,
     )
     print("Inferencing...")
-    for i in tqdm(test_dataset["text"]):
-        inputs = tokenizer(i, return_tensors="pt")
+    if opt.inference_once:
+        prompt = opt.prompt
+        inputs = tokenizer(prompt, return_tensors="pt")
         input_ids = inputs["input_ids"].to(device)
 
         output = model.generate(
@@ -314,11 +321,25 @@ def inference(opt, model, tokenizer, test_dataset, output_dir, max_length):
         )
         s = output.sequences[0]
         decoded_output = tokenizer.decode(s, skip_special_tokens=True)
-        generated.append(decoded_output)
+        print(decoded_output)
+    else:
+        for i in tqdm(test_dataset["text"]):
+            inputs = tokenizer(i, return_tensors="pt")
+            input_ids = inputs["input_ids"].to(device)
 
-        # print(decoded_output)
-    df = pd.concat([df, pd.DataFrame(generated)])
-    df.to_csv(os.path.join(opt.output_dir, "generated_output.csv"), index=False)
+            output = model.generate(
+                input_ids=input_ids,
+                generation_config=generation_config,
+                return_dict_in_generate=True,
+                max_new_tokens=256
+            )
+            s = output.sequences[0]
+            decoded_output = tokenizer.decode(s, skip_special_tokens=True)
+            generated.append(decoded_output)
+
+            # print(decoded_output)
+        df = pd.concat([df["text"], pd.DataFrame(generated)])
+        df.to_csv(os.path.join(opt.output_dir, opt.generated_name), index=False)
 
 
 def main():
@@ -327,13 +348,15 @@ def main():
 
     parser.add_argument("--train", action='store_true')
     parser.add_argument("--inference", action='store_true')
+    parser.add_argument("--inference_once", action='store_true')
 
     parser.add_argument("--model", type=str, required=True, help="Model Name (e.g., 'meta/llama-2-7b')")
     parser.add_argument("--dataset", type=str, required=True,
                         help="Dataset Name (e.g., 'wikipedia', 'tatsu-lab/alpaca')")
     parser.add_argument("--output_dir", type=str, required=True, help="Path where output saved")
     parser.add_argument("--output_name", type=str, required=True, help="Name of the output directory")
-    parser.add_argument("--wandb", type=str, required=True, help="Name of the W&B run")
+    parser.add_argument("--generated_name", type=str, help="Name of the generated output directory")
+    parser.add_argument("--wandb", type=str, help="Name of the W&B run")
 
     parser.add_argument("--lora_r", type=int, default=8, help="LoRA R: Dimension of the updated matrices")
     parser.add_argument("--lora_alpha", type=int, default=16, help="LoRA Alpha: Parameter for scaling")
