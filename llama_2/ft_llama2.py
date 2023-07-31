@@ -46,16 +46,26 @@ def load_model(opt, model_name, bnb_config):
 
 # Pre-processing Dataset
 def create_prompt_formats(opt, sample):
+    print(f"Creating prompts for {(opt.dataset).split('/')[-1]} dataset...")
     INTRO_BLURB = "Below is an instruction that describes a task. Write a response that appropriately completes the request."
     INSTRUCTION_KEY = "### Instruction:"
     INPUT_KEY = "Input:"
     RESPONSE_KEY = "### Response:"
     END_KEY = "### End"
 
-    blurb = f"{INTRO_BLURB}"
-    instruction = f"{INSTRUCTION_KEY}\n{sample['instruction']}"
-    input_context = f"{INPUT_KEY}\n{sample['context']}" if sample["context"] else None
-    response = f"{RESPONSE_KEY}\n{sample['response']}"
+    if "dolly" in opt.train.lower():
+        blurb = f"{INTRO_BLURB}"
+        instruction = f"{INSTRUCTION_KEY}\n{sample['instruction']}"
+        input_context = f"{INPUT_KEY}\n{sample['context']}" if sample["context"] else None
+        response = f"{RESPONSE_KEY}\n{sample['response']}"
+
+
+    elif "scienceqa" in opt.dataset.lower():
+        blurb = f"{INTRO_BLURB}"
+        instruction = f"{INSTRUCTION_KEY}\n{sample['question']}"
+        input_context = f"{INPUT_KEY}\n{sample['hint']}" if sample["hint"] else None
+        response = f"{RESPONSE_KEY}\n{sample['answer']}"
+
     inference_response = f"{RESPONSE_KEY}\n"
     end = f"{END_KEY}"
 
@@ -103,30 +113,32 @@ def preprocess_dataset(opt, tokenizer: AutoTokenizer, max_length: int, seed, dat
 
     _create_prompt_formats = partial(create_prompt_formats, opt)
     dataset = dataset.map(_create_prompt_formats)  # , batched=True)
+    _preprocessing_function = partial(preprocess_batch, max_length=max_length, tokenizer=tokenizer)
+
     if opt.train:
-        # Apply preprocessing to each batch of the dataset & and remove 'instruction', 'context', 'response', 'category'
-        # fields
-        _preprocessing_function = partial(preprocess_batch, max_length=max_length, tokenizer=tokenizer)
-        dataset = dataset.map(
-            _preprocessing_function,
-            batched=True,
-            remove_columns=["instruction", "context", "response", "text", "category"],
-        )
+        if "dolly" in opt.train.lower():
+            dataset = dataset.map(
+                _preprocessing_function,
+                batched=True,
+                remove_columns=["instruction", "context", "response", "text", "category"],
+            )
+        elif "scienceqa" in opt.dataset.lower():
+            dataset = dataset.map(
+                _preprocessing_function,
+                batched=True,
+                remove_columns=["text", 'image', 'question', 'choices', 'answer', 'hint', 'task', 'grade', 'subject', 'topic', 'category', 'skill', 'lecture', 'solution'],
+            )
 
         # Filter out samples that have input_ids exceeding max_length
         dataset = dataset.filter(lambda sample: len(sample["input_ids"]) < max_length)
-    elif opt.inference:
-        _preprocessing_function = partial(preprocess_batch, max_length=max_length, tokenizer=tokenizer)
-        dataset = dataset.map(
-            _preprocessing_function,
-            batched=True,
-            remove_columns=["instruction", "context", "response", "category"],
-        )
-        pd.DataFrame(dataset).to_csv(os.path.join(opt.output_dir, "test_dataset_1.csv"), index=False)
 
-
-    # Shuffle dataset
-    # dataset = dataset.shuffle(seed=seed)
+    # elif opt.inference:
+    #     _preprocessing_function = partial(preprocess_batch, max_length=max_length, tokenizer=tokenizer)
+    #     dataset = dataset.map(
+    #         _preprocessing_function,
+    #         batched=True,
+    #         remove_columns=["instruction", "context", "response", "category"],
+    #     )
 
     return dataset
 
@@ -272,25 +284,11 @@ def train(opt, model, tokenizer, train_dataset, valid_datset, output_dir):
         trainer.save_state()
         print(metrics)
 
-        ###
-
     # Saving model
     print("Saving last checkpoint of the model...")
     os.makedirs(output_dir, exist_ok=True)
     trainer.model.save_pretrained(output_dir)
     trainer.save_model(output_dir)
-
-    # # Merge weights
-    # model = AutoPeftModelForCausalLM.from_pretrained(output_dir, device_map=opt.device_map, torch_dtype=torch.bfloat16)
-    # model = model.merge_and_unload()
-    #
-    # output_merged_dir = os.path.join(opt.output_dir, "merged_"+(str(opt.output_name)))
-    # os.makedirs(output_merged_dir, exist_ok=True)
-    # model.save_pretrained(output_merged_dir, safe_serialization=True)
-
-    # # save tokenizer for easy inference
-    # tokenizer = AutoTokenizer.from_pretrained(opt.model)
-    # tokenizer.save_pretrained(output_merged_dir)
 
     # Free memory for merging weights
     del model
