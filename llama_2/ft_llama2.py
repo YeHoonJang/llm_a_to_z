@@ -53,7 +53,7 @@ def create_prompt_formats(opt, sample):
     RESPONSE_KEY = "### Response:"
     END_KEY = "### End"
 
-    if "dolly" in opt.train.lower():
+    if "dolly" in opt.dataset.lower():
         blurb = f"{INTRO_BLURB}"
         instruction = f"{INSTRUCTION_KEY}\n{sample['instruction']}"
         input_context = f"{INPUT_KEY}\n{sample['context']}" if sample["context"] else None
