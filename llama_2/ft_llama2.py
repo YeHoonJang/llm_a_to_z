@@ -46,7 +46,6 @@ def load_model(opt, model_name, bnb_config):
 
 # Pre-processing Dataset
 def create_prompt_formats(opt, sample):
-    print(f"Creating prompts for {(opt.dataset).split('/')[-1]} dataset...")
     INTRO_BLURB = "Below is an instruction that describes a task. Write a response that appropriately completes the request."
     INSTRUCTION_KEY = "### Instruction:"
     INPUT_KEY = "Input:"
@@ -112,11 +111,13 @@ def preprocess_dataset(opt, tokenizer: AutoTokenizer, max_length: int, seed, dat
     print("Preprocessing dataset...")
 
     _create_prompt_formats = partial(create_prompt_formats, opt)
+
+    print(f"Creating prompts for {(opt.dataset).split('/')[-1]} dataset...")
     dataset = dataset.map(_create_prompt_formats)  # , batched=True)
     _preprocessing_function = partial(preprocess_batch, max_length=max_length, tokenizer=tokenizer)
 
     if opt.train:
-        if "dolly" in opt.train.lower():
+        if "dolly" in opt.dataset.lower():
             dataset = dataset.map(
                 _preprocessing_function,
                 batched=True,
