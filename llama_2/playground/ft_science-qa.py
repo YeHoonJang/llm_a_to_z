@@ -42,6 +42,7 @@ df_valid = convert_dataset(dataset['validation'])
 df_train.to_csv(os.path.join(data_path, "scienceqa_train.csv"), index=False)
 df_valid.to_csv(os.path.join(data_path, "scienceqa_valid.csv"), index=False)
 
+
 os.environ["SCALE_API_KEY"] = "clkjnc9gj06pz1aqwav3rhqia"
 
 response = FineTune.create(
