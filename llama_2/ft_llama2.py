@@ -60,10 +60,18 @@ def create_prompt_formats(opt, sample):
 
 
     elif "scienceqa" in opt.dataset.lower():
+        choice_prefixes = [chr(ord('A') + i) for i in range(26)]
+
+        def format_options(options, choice_prefixes):
+            return ' '.join([f"({c}) {o}" for c, o in zip(choice_prefixes, options)])
+
+        options = format_options(sample["choices"], choice_prefixes)
+        answer = choice_prefixes[sample["answer"]]
+
         blurb = f"{INTRO_BLURB}"
-        instruction = f"{INSTRUCTION_KEY}\n{sample['question']}"
+        instruction = f"{INSTRUCTION_KEY}\n{sample['question']}\n\nOptions:\n{options}"
         input_context = f"{INPUT_KEY}\n{sample['hint']}" if sample["hint"] else None
-        response = f"{RESPONSE_KEY}\n{sample['answer']}"
+        response = f"{RESPONSE_KEY}\n{answer}"
 
     inference_response = f"{RESPONSE_KEY}\n"
     end = f"{END_KEY}"
@@ -133,13 +141,6 @@ def preprocess_dataset(opt, tokenizer: AutoTokenizer, max_length: int, seed, dat
         # Filter out samples that have input_ids exceeding max_length
         dataset = dataset.filter(lambda sample: len(sample["input_ids"]) < max_length)
 
-    # elif opt.inference:
-    #     _preprocessing_function = partial(preprocess_batch, max_length=max_length, tokenizer=tokenizer)
-    #     dataset = dataset.map(
-    #         _preprocessing_function,
-    #         batched=True,
-    #         remove_columns=["instruction", "context", "response", "category"],
-    #     )
 
     return dataset
 
