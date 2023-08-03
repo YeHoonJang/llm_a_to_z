@@ -273,6 +273,7 @@ def train(opt, model, tokenizer, train_dataset, valid_datset, output_dir):
             model=model,
             train_dataset=train_dataset,
             eval_dataset=valid_datset,
+            peft_config=peft_config,
             max_seq_length=opt.max_seq_length,
             tokenizer=tokenizer,
             # packing=True,
