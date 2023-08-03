@@ -18,7 +18,7 @@ from trl import SFTTrainer
 
 torch.cuda.empty_cache()
 
-logging.getLogger('codecarbon').setLevel(logging.ERROR)
+logging.getLogger('codecarbon').setLevel(logging.CRITICAL)
 
 if torch.cuda.is_available():
     device = "cuda"
