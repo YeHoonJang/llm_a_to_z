@@ -14,6 +14,7 @@ from functools import partial
 from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training, AutoPeftModelForCausalLM, PeftModel
 from transformers import AutoModelForCausalLM, AutoTokenizer, set_seed, Trainer, TrainingArguments, BitsAndBytesConfig,\
     DataCollatorForLanguageModeling, GenerationConfig, EarlyStoppingCallback
+from trl import SFTTrainer
 
 torch.cuda.empty_cache()
 
@@ -40,6 +41,9 @@ def load_model(opt, model_name, bnb_config):
 
     # Needed for Llama tokenizer
     tokenizer.pad_token = tokenizer.eos_token
+
+    if opt.padding_side:
+        tokenizer.padding_side = opt.padding_side
 
     return model, tokenizer
 
@@ -126,16 +130,24 @@ def preprocess_dataset(opt, tokenizer: AutoTokenizer, max_length: int, seed, dat
 
     if opt.train:
         if "dolly" in opt.dataset.lower():
+            if opt.llama_ft:
+                remove_columns = ["instruction", "context", "response", "category"]
+            else:
+                remove_columns = ["instruction", "context", "response", "text", "category"]
             dataset = dataset.map(
                 _preprocessing_function,
                 batched=True,
-                remove_columns=["instruction", "context", "response", "text", "category"],
+                remove_columns=remove_columns,
             )
         elif "scienceqa" in opt.dataset.lower():
+            if opt.llama_ft:
+                remove_columns = ['image', 'question', 'choices', 'answer', 'hint', 'task', 'grade', 'subject', 'topic', 'category', 'skill', 'lecture', 'solution']
+            else:
+                remove_columns = ["text", 'image', 'question', 'choices', 'answer', 'hint', 'task', 'grade', 'subject', 'topic', 'category', 'skill', 'lecture', 'solution']
             dataset = dataset.map(
                 _preprocessing_function,
                 batched=True,
-                remove_columns=["text", 'image', 'question', 'choices', 'answer', 'hint', 'task', 'grade', 'subject', 'topic', 'category', 'skill', 'lecture', 'solution'],
+                remove_columns=remove_columns
             )
 
         # Filter out samples that have input_ids exceeding max_length
@@ -213,6 +225,8 @@ def print_trainable_parameters(model, use_4bit=False):
 # Train
 def train(opt, model, tokenizer, train_dataset, valid_datset, output_dir):
 
+    use_flash_attention = opt.use_flash_attention
+
     # Apply preprocessing to the model to prepare it by
     # 1 - Enabling gradient checkpointing to reduce memory usage during fine-tuning
     model.gradient_checkpointing_enable()
@@ -230,32 +244,53 @@ def train(opt, model, tokenizer, train_dataset, valid_datset, output_dir):
     # Print information about the percentage of trainable parameters
     print_trainable_parameters(model)
 
-    # Training parameters
-    trainer = Trainer(
-        model=model,
-        train_dataset=train_dataset,
-        eval_dataset=valid_datset,
-        args=TrainingArguments(
-            per_device_train_batch_size=opt.batch_size,
+    args = TrainingArguments(
+            per_device_train_batch_size=6 if opt.use_flash_attention else opt.batch_size,
             gradient_accumulation_steps=opt.gradient_step,
+            gradient_checkpointing=True,
             warmup_steps=opt.warmup,
-            # num_train_epochs=opt.epoch,
-            max_steps=opt.max_step,
+            num_train_epochs=opt.epoch if opt.epoch else None,
+            max_steps=opt.max_step if opt.max_step else None,
             learning_rate=opt.lr,
-            fp16=True,
+            lr_scheduler_type=opt.lr_scheduler_type,
+            weight_decay=opt.weight_decay,
+            fp16=opt.fp16,
+            bf16=opt.bf16,
+            tf32=opt.tf32,
             logging_steps=int(len(train_dataset)*0.001),
             output_dir=output_dir,
             optim=opt.optimizer,
             # load_best_model_at_end=True,
             # evaluation_strategy="steps",
-            # save_strategy="steps",
+            save_strategy=opt.save_strategy,
             # eval_steps=5,
             # save_steps=10,
             run_name=opt.wandb,
-        ),
-        data_collator=DataCollatorForLanguageModeling(tokenizer, mlm=False),
-        # callbacks=[EarlyStoppingCallback(early_stopping_patience=1)]
     )
+
+    if opt.llama_ft:
+        trainer = SFTTrainer(
+            model=model,
+            train_dataset=train_dataset,
+            eval_dataset=valid_datset,
+            max_seq_length=opt.max_seq_length,
+            tokenizer=tokenizer,
+            # packing=True,
+            dataset_text_field="text",
+            args=args,
+            data_collator=DataCollatorForLanguageModeling(tokenizer, mlm=False),
+        )
+
+    else:
+        # Training parameters
+        trainer = Trainer(
+            model=model,
+            train_dataset=train_dataset,
+            eval_dataset=valid_datset,
+            args=args,
+            data_collator=DataCollatorForLanguageModeling(tokenizer, mlm=False),
+            # callbacks=[EarlyStoppingCallback(early_stopping_patience=1)]
+        )
 
     model.config.use_cache = False  # re-enable for inference to speed up predictions for similar inputs
 
@@ -347,8 +382,13 @@ def main():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--train", action='store_true')
+    parser.add_argument("--llama_ft", action='store_true')
+
     parser.add_argument("--inference", action='store_true')
+
     parser.add_argument("--inference_once", action='store_true')
+    parser.add_argument("--prompt", type=str, help="Prompt here, if you want to do inferencing once")
+
 
     parser.add_argument("--model", type=str, required=True, help="Model Name (e.g., 'meta/llama-2-7b')")
     parser.add_argument("--dataset", type=str, required=True,
@@ -358,17 +398,27 @@ def main():
     parser.add_argument("--generated_name", type=str, help="Name of the generated output directory")
     parser.add_argument("--wandb", type=str, help="Name of the W&B run")
 
+    parser.add_argument("--padding_side", type=str, default=None, choices=["right", "left"], help="Side on which the pad token applied")
+    parser.add_argument("--use_flash_attention", action='store_true', help="Using flash attention")
+
     parser.add_argument("--lora_r", type=int, default=8, help="LoRA R: Dimension of the updated matrices")
     parser.add_argument("--lora_alpha", type=int, default=16, help="LoRA Alpha: Parameter for scaling")
     parser.add_argument("--lora_dropout", type=float, default=0.05, help="LoRA Dropout: Dropout probability for layers")
 
     parser.add_argument("--batch_size", type=int, default=1, help="Batch size per device")
+    parser.add_argument("--max_seq_length", type=int, default=2048, help="Max length of sequence")
+    parser.add_argument("--save_strategy", type=str, default="steps", choices=["steps", "epoch", "no"], help="Checkpoint save strategy")
     parser.add_argument("--epoch", type=int, default=3, help="Train epoch")
-    parser.add_argument("--max_step", type=int, default=15, help="Max step")
+    parser.add_argument("--max_step", type=int, default=-1, help="Max step")
     parser.add_argument("--gradient_step", type=int, default=4, help="Gradient accumulation step")
     parser.add_argument("--warmup", type=int, default=2, help="Warmup step")
     parser.add_argument("--lr", type=float, default=2e-4, help="Learning rate")
+    parser.add_argument("--lr_scheduler_type", type=str, default="constant", help="Type of learning rate schedule")
+    parser.add_argument("--weight_decay", type=float, default=0.1, help="Weight decay ratio")
     parser.add_argument("--optimizer", type=str, default="paged_adamw_8bit", help="Optimizer")
+    parser.add_argument("--fp16", action='store_true', help="Using fp16")
+    parser.add_argument("--bf16", action='store_true', help="Using bf16")
+    parser.add_argument("--tf32", action='store_true', help="Using tf32")
 
     parser.add_argument("--temperature", type=float, default=0.7, help="Generation temperature range 0.0~1.0")
     parser.add_argument("--top_k", type=int, default=50, help="Top kth words")
