@@ -257,7 +257,7 @@ def train(opt, model, tokenizer, train_dataset, valid_datset, output_dir):
             fp16=opt.fp16,
             bf16=opt.bf16,
             tf32=opt.tf32,
-            logging_steps=int(len(train_dataset)*0.001),
+            logging_steps=opt.logging_steps,
             output_dir=output_dir,
             optim=opt.optimizer,
             # load_best_model_at_end=True,
@@ -429,6 +429,7 @@ def main():
     parser.add_argument("--device_map", type=str, default='auto',
                         help="Device (e.g., 'cpu', 'cuda:1', 'mps', or a GPU ordinal rank like 1)")
     parser.add_argument("--seed", type=int, default=42, help="Random Seed")
+    parser.add_argument("--logging_steps", type=int, default=10, help="Number of logging steps")
 
     opt = parser.parse_args()
 
