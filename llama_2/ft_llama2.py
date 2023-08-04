@@ -409,7 +409,7 @@ def main():
     parser.add_argument("--batch_size", type=int, default=1, help="Batch size per device")
     parser.add_argument("--max_seq_length", type=int, default=2048, help="Max length of sequence")
     parser.add_argument("--save_strategy", type=str, default="steps", choices=["steps", "epoch", "no"], help="Checkpoint save strategy")
-    parser.add_argument("--epoch", type=int, default=3, help="Train epoch")
+    parser.add_argument("--epoch", type=int, default=-1, help="Train epoch")
     parser.add_argument("--max_step", type=int, default=-1, help="Max step")
     parser.add_argument("--gradient_step", type=int, default=4, help="Gradient accumulation step")
     parser.add_argument("--warmup", type=int, default=2, help="Warmup step")
