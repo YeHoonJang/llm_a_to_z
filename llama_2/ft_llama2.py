@@ -50,11 +50,24 @@ def load_model(opt, model_name, bnb_config):
 
 # Pre-processing Dataset
 def create_prompt_formats(opt, sample):
-    INTRO_BLURB = "Below is an instruction that describes a task. Write a response that appropriately completes the request."
-    INSTRUCTION_KEY = "### Instruction:"
-    INPUT_KEY = "Input:"
-    RESPONSE_KEY = "### Response:"
-    END_KEY = "### End"
+    if opt.prompt_style == "upstage":
+        INSTRUCTION_KEY = "### User:"
+        INPUT_KEY = "### System:"
+        RESPONSE_KEY = "### Assistant:"
+        END_KEY = ""
+
+    else:
+        INSTRUCTION_KEY = "### Instruction:"
+        INPUT_KEY = "Input:"
+        RESPONSE_KEY = "### Response:"
+        END_KEY = "### End"
+
+    # Custion Prompt
+    if opt.custom_prompt=="none":
+        INTRO_BLURB = "Below is an instruction that describes a task. Write a response that appropriately completes the request."
+    else:
+        with open(opt.custom_prompt, 'r', encoding='utf-8') as f:
+            INTRO_BLURB = f.read()
 
     if "dolly" in opt.dataset.lower():
         blurb = f"{INTRO_BLURB}"
@@ -390,6 +403,8 @@ def main():
     parser.add_argument("--inference_once", action='store_true')
     parser.add_argument("--prompt", type=str, help="Prompt here, if you want to do inferencing once")
 
+    parser.add_argument("--prompt_style", type=str, help="Prompt format style (e.g., dolly, alpaca, upstage ...)")
+    parser.add_argument("--custom_prompt", type=str, default="none", help="Path of custom prompt (e.g., prompt.txt)")
 
     parser.add_argument("--model", type=str, required=True, help="Model Name (e.g., 'meta/llama-2-7b')")
     parser.add_argument("--dataset", type=str, required=True,
@@ -472,11 +487,15 @@ def main():
             torch_dtype=torch.float16,
             device_map=opt.device_map,
         )
-        model = PeftModel.from_pretrained(
-                model,
-                lora_weights,
-                torch_dtype=torch.float16,
-        )
+        if "chat" not in model_name.lower():
+            print("Peft setting ... ")
+            model = PeftModel.from_pretrained(
+                    model,
+                    lora_weights,
+                    torch_dtype=torch.float16,
+            )
+        else:
+            print(f"Using origin chat model: {model_name}")
 
         tokenizer = AutoTokenizer.from_pretrained(opt.model)
         tokenizer.pad_token = tokenizer.eos_token
