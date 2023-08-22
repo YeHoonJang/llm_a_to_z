@@ -358,7 +358,8 @@ def inference(opt, model, tokenizer, test_dataset, output_dir, max_length):
     )
     print("Inferencing...")
     if opt.inference_once:
-        prompt = opt.prompt
+        with open(opt.prompt, 'r', encoding='utf-8') as f:
+            prompt =  f.read()
         inputs = tokenizer(prompt, return_tensors="pt")
         input_ids = inputs["input_ids"].to(device)
 
@@ -401,7 +402,7 @@ def main():
     parser.add_argument("--inference", action='store_true')
 
     parser.add_argument("--inference_once", action='store_true')
-    parser.add_argument("--prompt", type=str, help="Prompt here, if you want to do inferencing once")
+    parser.add_argument("--prompt", type=str, help="Path of prompt here, if you want to do inferencing once")
 
     parser.add_argument("--prompt_style", type=str, help="Prompt format style (e.g., dolly, alpaca, upstage ...)")
     parser.add_argument("--custom_prompt", type=str, default="none", help="Path of custom prompt (e.g., prompt.txt)")
