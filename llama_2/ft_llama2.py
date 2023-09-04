@@ -339,6 +339,7 @@ def train(opt, model, tokenizer, train_dataset, valid_datset, output_dir):
     print("Saving last checkpoint of the model...")
     os.makedirs(output_dir, exist_ok=True)
     trainer.model.save_pretrained(output_dir)
+    trainer.model.push_to_hub("Yehoon/yehoon_llama2")
     trainer.save_model(output_dir)
 
     # Free memory for merging weights
