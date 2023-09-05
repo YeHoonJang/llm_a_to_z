@@ -1,5 +1,5 @@
-ipynb/
-playground/
+.ipynb/
+.playground/
 my_llama2/
 *result*/
 *.csv
