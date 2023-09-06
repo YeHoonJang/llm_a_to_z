@@ -339,8 +339,14 @@ def train(opt, model, tokenizer, train_dataset, valid_datset, output_dir):
     print("Saving last checkpoint of the model...")
     os.makedirs(output_dir, exist_ok=True)
     trainer.model.save_pretrained(output_dir)
-    trainer.model.push_to_hub("Yehoon/yehoon_llama2")
+    trainer.model.push_to_hub(opt.hub_name)
     trainer.save_model(output_dir)
+
+    # TODO: 여기서 부터 다시!!!
+    # model_to_merge = PeftModel.from_pretrained(AutoPeftModelForCausalLM.from_pretrained(opt.model).to(device), output_dir)
+    # merged_model = model_to_merge.merge_and_unload()
+    # merged_model.save_pretrained(merged_model)
+
 
     # Free memory for merging weights
     del model
@@ -413,8 +419,10 @@ def main():
                         help="Dataset Name (e.g., 'wikipedia', 'tatsu-lab/alpaca')")
     parser.add_argument("--output_dir", type=str, required=True, help="Path where output saved")
     parser.add_argument("--output_name", type=str, required=True, help="Name of the output directory")
+    parser.add_argument("--hub_name", type=str, required=True, help="Name of huggingface model")
     parser.add_argument("--generated_name", type=str, help="Name of the generated output directory")
     parser.add_argument("--wandb", type=str, help="Name of the W&B run")
+
 
     parser.add_argument("--padding_side", type=str, default=None, choices=["right", "left"], help="Side on which the pad token applied")
     parser.add_argument("--use_flash_attention", action='store_true', help="Using flash attention")
