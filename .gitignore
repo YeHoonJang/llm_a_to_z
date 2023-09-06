@@ -1,10 +1,10 @@
+*.ipynb*
 .ipynb/
 .playground/
 my_llama2/
 *result*/
 *.csv
 *free_note*.*
-.ipynb*/
 .dockerignore
 .idea/
 flagged/
@@ -26,4 +26,3 @@ todo.txt
 .venv
 .vscode
 outputs/output/*
-dataset/*
