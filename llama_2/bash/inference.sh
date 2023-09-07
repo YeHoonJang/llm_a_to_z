@@ -1,2 +1,1 @@
-# Inference
-python /home/yehoon/workspace/llm_a_to_z/llama_2/ft_llama2.py --inference --model="meta-llama/Llama-2-7b-hf" --dataset="Yehoon/dolly_test" --output_dir="/home/yehoon/workspace/outputs/" --output_name="0906_metric_test" --generated_name="metric_test.csv"
+python /home/yehoon/workspace/llm_a_to_z/llama_2/inference.py --inference --model="meta-llama/Llama-2-7b-hf" --dataset="Yehoon/dolly_test" --prompt_style="upstage" --output_dir="/home/yehoon/workspace/outputs/" --output_name="0906_metric_test" --generated_name="metric_test.csv"
