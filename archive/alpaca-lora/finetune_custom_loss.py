@@ -4,11 +4,10 @@ from typing import List
 
 import fire
 import torch
-from torch import nn
 import transformers
 from datasets import load_dataset
 
-from transformers import Trainer, TrainingArguments, AutoConfig, AutoModelForCausalLM
+from transformers import AutoConfig, AutoModelForCausalLM
 
 """
 Unused imports:
@@ -25,7 +24,7 @@ from peft import (
 )
 from transformers import LlamaForCausalLM, LlamaTokenizer
 
-from utils.prompter import Prompter
+from llama_2.utils.utils import Prompter
 
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
