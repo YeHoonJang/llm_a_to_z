@@ -10,7 +10,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, GenerationConfig
 from peft import PeftModel
 
 from utils.utils import get_max_length
-from data_processing import preprocess_dataset
+from data_processing.data_processing import preprocess_dataset
 
 
 # empty cache
