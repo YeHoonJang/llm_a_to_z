@@ -1,7 +1,7 @@
 from functools import partial
 from transformers import AutoTokenizer
 
-from utils.utils import preprocess_batch
+from ..utils.utils import preprocess_batch
 
 
 # Pre-processing Dataset
@@ -45,6 +45,10 @@ def create_prompt_formats(opt, sample):
         instruction = f"{INSTRUCTION_KEY}\n{sample['question']}\n\nOptions:\n{options}"
         input_context = f"{INPUT_KEY}\n{sample['hint']}" if sample["hint"] else None
         response = f"{RESPONSE_KEY}\n{answer}"
+
+    elif "arc_e" in opt.dataset.lower():
+        blurb = f"{INTRO_BLURB}"
+
 
     inference_response = f"{RESPONSE_KEY}\n"
     end = f"{END_KEY}"
