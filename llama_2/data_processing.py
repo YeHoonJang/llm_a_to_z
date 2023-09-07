@@ -1,7 +1,8 @@
+import pdb
 from functools import partial
 from transformers import AutoTokenizer
 
-from ..utils.utils import preprocess_batch
+from utils.utils import preprocess_batch
 
 
 # Pre-processing Dataset
@@ -25,12 +26,12 @@ def create_prompt_formats(opt, sample):
         with open(opt.custom_prompt, 'r', encoding='utf-8') as f:
             INTRO_BLURB = f.read()
 
+    # Prompt format by dataset
     if "dolly" in opt.dataset.lower():
         blurb = f"{INTRO_BLURB}"
         instruction = f"{INSTRUCTION_KEY}\n{sample['instruction']}"
         input_context = f"{INPUT_KEY}\n{sample['context']}" if sample["context"] else None
         response = f"{RESPONSE_KEY}\n{sample['response']}"
-
 
     elif "scienceqa" in opt.dataset.lower():
         choice_prefixes = [chr(ord('A') + i) for i in range(26)]
@@ -46,9 +47,37 @@ def create_prompt_formats(opt, sample):
         input_context = f"{INPUT_KEY}\n{sample['hint']}" if sample["hint"] else None
         response = f"{RESPONSE_KEY}\n{answer}"
 
-    elif "arc_e" in opt.dataset.lower():
-        blurb = f"{INTRO_BLURB}"
+    elif "arc" in opt.dataset.lower():
+        options = "\n".join([" ".join([str(label), text]) for label, text in zip(sample["choices"]["label"], sample["choices"]["text"])])
 
+        blurb = f"{INTRO_BLURB} Answer with the number or symbol of the correct answer without any explanations."
+        instruction = f"{INSTRUCTION_KEY}\n{sample['question']}\n\n{options}"
+        input_context = ""
+        response = f"{RESPONSE_KEY}\n{sample['answerKey']}"
+
+    elif "hellaswag" in opt.dataset.lower():
+        options = "\n".join([" ".join([str(idx), text]) for idx, text in enumerate(sample["endings"])])
+
+        blurb = f"{INTRO_BLURB} Choose the number to continue the sentence in context and complete it appropriately. Answer with the number of the correct answer without any explanations."
+        instruction = f"{INSTRUCTION_KEY}\n{sample['ctx']}\n\n{options}"
+        input_context = ""
+        response = f"{RESPONSE_KEY}\n{sample['label']}"
+
+    elif "mmlu" in opt.dataset.lower():
+        options = options = "\n".join([" ".join([str(idx), text]) for idx, text in enumerate(sample["choices"])])
+
+        blurb = f"{INTRO_BLURB} Answer with the number of the correct answer without any explanations."
+        instruction = f"{INSTRUCTION_KEY}\n{sample['question']}\n\n{options}"
+        input_context = ""
+        response = f"{RESPONSE_KEY}\n{sample['answer']}"
+
+    elif "truthful_qa" in opt.dataset.lower():
+        options = "\n".join([" ".join([str(idx), text]) for idx, text in enumerate(sample["mc1_targets"]["choices"])])
+
+        blurb = f"{INTRO_BLURB} Answer with the number or symbol of the correct answer without any explanations."
+        instruction = f"{INSTRUCTION_KEY}\n{sample['question']}\n\n{options}"
+        input_context = ""
+        response = f"{RESPONSE_KEY}\n{sample['mc1_targets']['labels'].index(1)}"
 
     inference_response = f"{RESPONSE_KEY}\n"
     end = f"{END_KEY}"

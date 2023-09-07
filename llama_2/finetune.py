@@ -10,7 +10,7 @@ from trl import SFTTrainer
 
 from utils.config import find_all_linear_names, create_peft_config, create_bnb_config
 from utils.utils import print_trainable_parameters, get_max_length
-from data_processing.data_processing import preprocess_dataset
+from llama_2.data_processing import preprocess_dataset
 
 # empty cache
 torch.cuda.empty_cache()
@@ -175,8 +175,10 @@ def main():
     parser.add_argument("--custom_prompt", type=str, default="none", help="Path of custom prompt (e.g., prompt.txt)")
 
     parser.add_argument("--model", type=str, required=True, help="Model Name (e.g., 'meta/llama-2-7b')")
-    parser.add_argument("--dataset", type=str, required=True,
-                        help="Dataset Name (e.g., 'wikipedia', 'tatsu-lab/alpaca')")
+    parser.add_argument("--dataset", type=str, required=True, help="Dataset Name (e.g., 'wikipedia', 'tatsu-lab/alpaca')")
+    parser.add_argument("--dataset_subset", type=str, default=None, help="Subset of dataset")
+    parser.add_argument("--train_split", type=str, default="train", help="Train split of dataset")
+    parser.add_argument("--valid_split", type=str, default="validation", help="Validation split of dataset")
     parser.add_argument("--output_dir", type=str, required=True, help="Path where output saved")
     parser.add_argument("--output_name", type=str, required=True, help="Name of the output directory")
     parser.add_argument("--hub_name", type=str, required=True, help="Name of huggingface model")
@@ -213,8 +215,18 @@ def main():
     opt = parser.parse_args()
 
     # Download Dataset
-    train_dataset = load_dataset(opt.dataset, split="train[:80%]")
-    valid_dataset = load_dataset(opt.dataset, split="train[80%:95%]")
+    if "dolly" in opt.dataset.lower():
+        # dolly dataset has only train split
+        train_dataset = load_dataset(opt.dataset, name=opt.dataset_subset, split=f"train[:80%]")
+        valid_dataset = load_dataset(opt.dataset, name=opt.dataset_subset, split=f"train[80%:95%]")
+    elif "truthful_qa" in opt.dataset.lower():
+        # truthful_qa dataset has only validation split
+        train_dataset = load_dataset(opt.dataset, name=opt.dataset_subset, split=f"validation[:80%]")
+        valid_dataset = load_dataset(opt.dataset, name=opt.dataset_subset, split=f"validation[80%:95%]")
+    else:
+        train_dataset = load_dataset(opt.dataset, name=opt.dataset_subset, split=f"{opt.train_split}")
+        valid_dataset = load_dataset(opt.dataset, name=opt.dataset_subset, split=f"{opt.valid_split}")
+
 
 
     print(f"[Train] Number of prompts: {len(train_dataset)}")

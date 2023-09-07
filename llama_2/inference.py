@@ -10,7 +10,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, GenerationConfig
 from peft import PeftModel
 
 from utils.utils import get_max_length
-from data_processing.data_processing import preprocess_dataset
+from data_processing import preprocess_dataset
 
 
 # empty cache
@@ -54,6 +54,7 @@ def inference(opt, model, tokenizer, test_dataset):
         print(decoded_output)
     else:
         for i in tqdm(test_dataset["text"]):
+            print(i)
             inputs = tokenizer(i, return_tensors="pt")
             input_ids = inputs["input_ids"].to(device)
 
@@ -85,8 +86,9 @@ def main():
     parser.add_argument("--custom_prompt", type=str, default="none", help="Path of custom prompt (e.g., prompt.txt)")
 
     parser.add_argument("--model", type=str, required=True, help="Model Name (e.g., 'meta/llama-2-7b')")
-    parser.add_argument("--dataset", type=str, required=True,
-                        help="Dataset Name (e.g., 'wikipedia', 'tatsu-lab/alpaca')")
+    parser.add_argument("--dataset", type=str, required=True, help="Dataset Name (e.g., 'wikipedia', 'tatsu-lab/alpaca')")
+    parser.add_argument("--dataset_subset", type=str, default=None, help="Subset of dataset")
+    parser.add_argument("--test_split", type=str, default="test", help="Split of dataset")
     parser.add_argument("--output_dir", type=str, required=True, help="Path where output saved")
     parser.add_argument("--output_name", type=str, required=True, help="Name of the output directory")
     parser.add_argument("--generated_name", type=str, help="Name of the generated output directory")
@@ -102,7 +104,14 @@ def main():
     opt = parser.parse_args()
 
     # Download Dataset
-    test_dataset = load_dataset(opt.dataset, split="train[95%:]")
+    if "dolly" in opt.dataset.lower():
+        # dolly dataset has only train splits
+        test_dataset = load_dataset(opt.dataset, name=opt.dataset_subset, split=f"train[:95%]")
+    elif "truthful_qa" in opt.dataset.lower():
+        # truthful_qa dataset has only validation splits
+        test_dataset = load_dataset(opt.dataset, name=opt.dataset_subset, split=f"validation[:95%]")
+    else:
+        test_dataset = load_dataset(opt.dataset, name=opt.dataset_subset, split=f"{opt.test_split}")
 
     print(f"[Test] Number of prompts: {len(test_dataset)}")
     print(f"[Test] Column names are: {test_dataset.column_names}")
@@ -127,12 +136,17 @@ def main():
     else:
         print(f"Using original chat model: {model_name}")
 
+    model = model.to(device)
     tokenizer = AutoTokenizer.from_pretrained(opt.model)
     tokenizer.pad_token = tokenizer.eos_token
 
     max_length = get_max_length(model)
     test_dataset = preprocess_dataset(opt, tokenizer, max_length, opt.seed, test_dataset)
     inference(opt, model, tokenizer, test_dataset)
+
+    # TODO: evaluate part begin
+
+    
 
 if __name__ == "__main__":
     main()
