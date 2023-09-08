@@ -65,12 +65,17 @@ def inference(opt, model, tokenizer, test_dataset):
                 max_new_tokens=256
             )
             s = output.sequences[0]
+            # print(output)
             decoded_output = tokenizer.decode(s, skip_special_tokens=True)
             generated.append(decoded_output)
 
             # print(decoded_output)
         df = pd.concat([df["text"], pd.DataFrame(generated)])
         df.to_csv(os.path.join(opt.output_dir, opt.generated_name), index=False)
+
+    # TODO: evaluate part begin
+    # if opt.evaluate:
+    #    return
 
 
 def main():
@@ -81,6 +86,8 @@ def main():
     parser.add_argument("--inference", action='store_true')
     parser.add_argument("--inference_once", action='store_true')
     parser.add_argument("--prompt", type=str, help="Path of prompt here, if you want to do inferencing once")
+
+    parser.add_argument("--evaluate", action='store_true')
 
     parser.add_argument("--prompt_style", type=str, help="Prompt format style (e.g., dolly, alpaca, upstage ...)")
     parser.add_argument("--custom_prompt", type=str, default="none", help="Path of custom prompt (e.g., prompt.txt)")
@@ -146,7 +153,8 @@ def main():
 
     # TODO: evaluate part begin
 
-    
+
+
 
 if __name__ == "__main__":
     main()
