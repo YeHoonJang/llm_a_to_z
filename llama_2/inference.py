@@ -113,6 +113,9 @@ def main():
     if "dolly" in opt.dataset.lower():
         # dolly dataset has only train splits
         test_dataset = load_dataset(opt.dataset, name=opt.dataset_subset, split=f"train[:95%]")
+    elif "hellaswaq" in opt.dataset.lower():
+        # hellaswaq test dataset has no labels
+        test_dataset = load_dataset(opt.dataset, name=opt.dataset_subset, split=f"validation")
     elif "truthful_qa" in opt.dataset.lower():
         # truthful_qa dataset has only validation splits
         test_dataset = load_dataset(opt.dataset, name=opt.dataset_subset, split=f"validation[:95%]")
@@ -151,8 +154,6 @@ def main():
     inference(opt, model, tokenizer, test_dataset)
 
     # TODO: evaluate part begin
-
-
 
 
 if __name__ == "__main__":

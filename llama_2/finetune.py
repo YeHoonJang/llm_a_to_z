@@ -219,6 +219,10 @@ def main():
         # dolly dataset has only train split
         train_dataset = load_dataset(opt.dataset, name=opt.dataset_subset, split=f"train[:80%]")
         valid_dataset = load_dataset(opt.dataset, name=opt.dataset_subset, split=f"train[80%:95%]")
+    elif "hellaswaq" in opt.dataset.lower():
+        # hellaswaq test dataset has no labels
+        train_dataset = load_dataset(opt.dataset, name=opt.dataset_subset, split=f"train[:80%]")
+        valid_dataset = load_dataset(opt.dataset, name=opt.dataset_subset, split=f"train[80%:]")
     elif "truthful_qa" in opt.dataset.lower():
         # truthful_qa dataset has only validation split
         train_dataset = load_dataset(opt.dataset, name=opt.dataset_subset, split=f"validation[:80%]")
@@ -226,8 +230,6 @@ def main():
     else:
         train_dataset = load_dataset(opt.dataset, name=opt.dataset_subset, split=f"{opt.train_split}")
         valid_dataset = load_dataset(opt.dataset, name=opt.dataset_subset, split=f"{opt.valid_split}")
-
-
 
     print(f"[Train] Number of prompts: {len(train_dataset)}")
     print(f"[Validation] Number of prompts: {len(valid_dataset)}")

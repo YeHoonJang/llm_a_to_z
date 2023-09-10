@@ -1,1 +1,11 @@
-python /home/yehoon/workspace/llm_a_to_z/llama_2/inference.py --inference --model="meta-llama/Llama-2-7b-hf" --dataset="truthful_qa" --dataset_subset="multiple_choice" --test_split="validation" --prompt_style="upstage" --output_dir="/home/yehoon/workspace/outputs/" --output_name="0906_metric_test" --generated_name="metric_test_truthful_qa.csv"
+# ARC
+CUDA_VISIBLE_DEVICES=4 python /home/yehoon/workspace/llm_a_to_z/llama_2/inference.py --inference --model="meta-llama/Llama-2-7b-hf" --dataset="ai2_arc" --dataset_subset="ARC-Easy" --test_split="test" --prompt_style="upstage" --output_dir="/home/yehoon/workspace/outputs/" --output_name="0907_ft_llama2_upstage_way" --generated_name="metric_test_arc.csv"
+
+# Hellaswag
+CUDA_VISIBLE_DEVICES=5 python /home/yehoon/workspace/llm_a_to_z/llama_2/inference.py --inference --model="meta-llama/Llama-2-7b-hf" --dataset="hellaswag" --test_split="test" --prompt_style="upstage" --output_dir="/home/yehoon/workspace/outputs/" --output_name="0907_ft_llama2_upstage_way" --generated_name="metric_test_hellaswag.csv"
+
+# MMLU
+CUDA_VISIBLE_DEVICES=6 python /home/yehoon/workspace/llm_a_to_z/llama_2/inference.py --inference --model="meta-llama/Llama-2-7b-hf" --dataset="cais/mmlu" --dataset_subset="all" --test_split="test" --prompt_style="upstage" --output_dir="/home/yehoon/workspace/outputs/" --output_name="0907_ft_llama2_upstage_way" --generated_name="metric_test_mmlu.csv"
+
+# Truthful_QA
+CUDA_VISIBLE_DEVICES=7 python /home/yehoon/workspace/llm_a_to_z/llama_2/inference.py --inference --model="meta-llama/Llama-2-7b-hf" --dataset="truthful_qa" --dataset_subset="multiple_choice" --test_split="validation" --prompt_style="upstage" --output_dir="/home/yehoon/workspace/outputs/" --output_name="0907_ft_llama2_upstage_way" --generated_name="metric_test_truthful_qa.csv"
