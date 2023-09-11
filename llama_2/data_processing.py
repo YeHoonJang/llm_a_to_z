@@ -48,34 +48,38 @@ def create_prompt_formats(opt, sample):
         response = f"{RESPONSE_KEY}\n{answer}"
 
     elif "arc" in opt.dataset.lower():
-        options = "\n".join([" ".join([str(label), text]) for label, text in zip(sample["choices"]["label"], sample["choices"]["text"])])
+        # options = "\n".join([" ".join([str(label), text]) for label, text in zip(sample["choices"]["label"], sample["choices"]["text"])])
+        options = [" ".join([str(label), text]) for label, text in zip(sample["choices"]["label"], sample["choices"]["text"])]
 
-        blurb = f"{INTRO_BLURB} Answer with the number or symbol of the correct answer without any explanations."
-        instruction = f"{INSTRUCTION_KEY}\n{sample['question']}\n\n{options}"
+        blurb = f"{INTRO_BLURB} The answer must be one of the one in the list. Answer with the number or symbol of the correct answer without any explanations."
+        instruction = f"{INSTRUCTION_KEY}\n{sample['question']}\n\n{str(options)}"
         input_context = ""
         response = f"{RESPONSE_KEY}\n{sample['answerKey']}"
 
     elif "hellaswag" in opt.dataset.lower():
-        options = "\n".join([" ".join([str(idx), text]) for idx, text in enumerate(sample["endings"])])
+        # options = "\n".join([" ".join([str(idx), text]) for idx, text in enumerate(sample["endings"])])
+        options = [" ".join([str(idx), text]) for idx, text in enumerate(sample["endings"])]
 
-        blurb = f"{INTRO_BLURB} Choose the number to continue the sentence in context and complete it appropriately. Answer with the number of the correct answer without any explanations."
-        instruction = f"{INSTRUCTION_KEY}\n{sample['ctx']}\n\n{options}"
+        blurb = f"{INTRO_BLURB} Choose the number to continue the sentence in context and complete it appropriately. The answer must be one of the one in the list. Answer with the number of the correct answer without any explanations."
+        instruction = f"{INSTRUCTION_KEY}\n{sample['ctx']}\n\n{str(options)}"
         input_context = ""
         response = f"{RESPONSE_KEY}\n{sample['label']}"
 
     elif "mmlu" in opt.dataset.lower():
-        options = options = "\n".join([" ".join([str(idx), text]) for idx, text in enumerate(sample["choices"])])
+        # options = options = "\n".join([" ".join([str(idx), text]) for idx, text in enumerate(sample["choices"])])
+        options = options = [" ".join([str(idx), text]) for idx, text in enumerate(sample["choices"])]
 
-        blurb = f"{INTRO_BLURB} Answer with the number of the correct answer without any explanations."
-        instruction = f"{INSTRUCTION_KEY}\n{sample['question']}\n\n{options}"
+        blurb = f"{INTRO_BLURB} The answer must be one of the one in the list. Answer with the number of the correct answer without any explanations."
+        instruction = f"{INSTRUCTION_KEY}\n{sample['question']}\n\n{str(options)}"
         input_context = ""
         response = f"{RESPONSE_KEY}\n{sample['answer']}"
 
     elif "truthful_qa" in opt.dataset.lower():
-        options = "\n".join([" ".join([str(idx), text]) for idx, text in enumerate(sample["mc1_targets"]["choices"])])
+        # options = "\n".join([" ".join([str(idx), text]) for idx, text in enumerate(sample["mc1_targets"]["choices"])])
+        options = [" ".join([str(idx), text]) for idx, text in enumerate(sample["mc1_targets"]["choices"])]
 
-        blurb = f"{INTRO_BLURB} Answer with the number or symbol of the correct answer without any explanations."
-        instruction = f"{INSTRUCTION_KEY}\n{sample['question']}\n\n{options}"
+        blurb = f"{INTRO_BLURB} The answer must be one of the one in the list. Answer with the number or symbol of the correct answer without any explanations."
+        instruction = f"{INSTRUCTION_KEY}\n{sample['question']}\n\n{str(options)}"
         input_context = ""
         response = f"{RESPONSE_KEY}\n{sample['mc1_targets']['labels'].index(1)}"
 
