@@ -60,7 +60,7 @@ def create_prompt_formats(opt, sample):
         # options = "\n".join([" ".join([str(idx), text]) for idx, text in enumerate(sample["endings"])])
         options = [" ".join([str(idx), text]) for idx, text in enumerate(sample["endings"])]
 
-        blurb = f"{INTRO_BLURB} Choose the number to continue the sentence in context and complete it appropriately. The answer must be one of the one in the list. Answer with the number of the correct answer without any explanations."
+        blurb = f"{INTRO_BLURB} Choose the number to continue the sentence in context and complete it appropriately. The answer must be one of the one in the list. Answer with the number of the correct answer without any explanations and quoting mark."
         instruction = f"{INSTRUCTION_KEY}\n{sample['ctx']}\n\n{str(options)}"
         input_context = ""
         response = f"{RESPONSE_KEY}\n{sample['label']}"
@@ -69,7 +69,7 @@ def create_prompt_formats(opt, sample):
         # options = options = "\n".join([" ".join([str(idx), text]) for idx, text in enumerate(sample["choices"])])
         options = options = [" ".join([str(idx), text]) for idx, text in enumerate(sample["choices"])]
 
-        blurb = f"{INTRO_BLURB} The answer must be one of the one in the list. Answer with the number of the correct answer without any explanations."
+        blurb = f"{INTRO_BLURB} The answer must be one of the one in the list. Answer with the number of the correct answer without any explanations and quoting mark."
         instruction = f"{INSTRUCTION_KEY}\n{sample['question']}\n\n{str(options)}"
         input_context = ""
         response = f"{RESPONSE_KEY}\n{sample['answer']}"
@@ -78,7 +78,7 @@ def create_prompt_formats(opt, sample):
         # options = "\n".join([" ".join([str(idx), text]) for idx, text in enumerate(sample["mc1_targets"]["choices"])])
         options = [" ".join([str(idx), text]) for idx, text in enumerate(sample["mc1_targets"]["choices"])]
 
-        blurb = f"{INTRO_BLURB} The answer must be one of the one in the list. Answer with the number or symbol of the correct answer without any explanations."
+        blurb = f"{INTRO_BLURB} The answer must be one of the one in the list. Answer with the number or symbol of the correct answer without any explanations and quoting mark."
         instruction = f"{INSTRUCTION_KEY}\n{sample['question']}\n\n{str(options)}"
         input_context = ""
         response = f"{RESPONSE_KEY}\n{sample['mc1_targets']['labels'].index(1)}"
