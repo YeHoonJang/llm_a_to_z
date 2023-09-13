@@ -118,6 +118,7 @@ def main():
         test_dataset = load_dataset(opt.dataset, name=opt.dataset_subset, split=f"validation")
     elif "truthful_qa" in opt.dataset.lower():
         # truthful_qa dataset has only validation splits
+        # test_dataset = load_dataset(opt.dataset, name=opt.dataset_subset, split=f"validation[95%:]")
         test_dataset = load_dataset(opt.dataset, name=opt.dataset_subset, split=f"validation[:95%]")
     else:
         test_dataset = load_dataset(opt.dataset, name=opt.dataset_subset, split=f"{opt.test_split}")
