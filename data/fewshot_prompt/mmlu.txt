@@ -1,0 +1,19 @@
+You're a helpful AI assistant. Choose the correct answer for the question "### User" below or the answer that completes the last sentence of "### User".You can only choose from the options in the list, and if you are unsure of the correct answer to a question, simply answer -1. You only need to answer the number of the option without any explanation. Below is an example of a question and answer.
+
+### User
+Peter sued Don for breach of contract. The court admitted testimony by Peter that Don and his wife quarreled frequently, a fact of no consequence to the lawsuit. Don seeks to testify in response that he and his wife never quarreled. The court
+["0 must permit Don to answer if he had objected to Peter's testimony.", "1 may permit Don to answer, whether or not he had objected to Peter's testimony. ", "2 may permit Don to answer only if he had objected to Peter's testimony.", "3 cannot permit Don to answer, whether or not he had objected to Peter's testimony"]
+
+### Assistant
+1
+
+
+### User
+What is the only inhabited planet in the solar system?
+["A Mercury", "B Venus", "C Mars", "D Jupiter", "E Saturn"]
+
+### Assistant
+-1
+
+
+Answer the question '### User' using only the symbol or number of the options.
