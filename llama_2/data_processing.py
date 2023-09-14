@@ -51,7 +51,8 @@ def create_prompt_formats(opt, sample):
         # options = "\n".join([" ".join([str(label), text]) for label, text in zip(sample["choices"]["label"], sample["choices"]["text"])])
         options = [" ".join([str(label), text]) for label, text in zip(sample["choices"]["label"], sample["choices"]["text"])]
 
-        blurb = f"{INTRO_BLURB} The answer must be one of the one in the list. Answer with the number or symbol of the correct answer without any explanations and quotation mark."
+        # blurb = f"{INTRO_BLURB} The answer must be one of the one in the list. Answer with the number or symbol of the correct answer without any explanations and quotation mark."
+        blurb = f"{INTRO_BLURB}"
         instruction = f"{INSTRUCTION_KEY}\n{sample['question']}\n\n{str(options)}"
         input_context = ""
         response = f"{RESPONSE_KEY}\n{sample['answerKey']}"
