@@ -1,19 +1,12 @@
-You're a helpful AI assistant. Choose the correct answer for the question "### User" below. You can only choose from the options in the list, and if you are unsure of the correct answer to a question, simply answer -1. You only need to answer the number of the option without any explanation. Below is an example of a question and answer.
+You're a helpful AI assistant. Choose the correct answer for the question ### User or the appropriate answer that completes the ### User's sentence. You can only choose the option in the 'Options' list. If you are unsure of the correct answer, simply answer -1. You have to answer only the character or number. Below <example> is an example.
 
+<example>
 ### User
-Does lightning ever strike twice in the same place?
-["0 Yes, lightning can strike twice in the same place.", "1 No, lightning never strikes twice in the same place.", "2 No, lightning never strikes the same place twice.", "3 No, a place that has been struck by lightning once is safe from lightning in the future."]
+George wants to warm his hands quickly by rubbing them. Which skin surface will produce the most heat?
+
+Options: ["A. wet palms", "B. dry palms", "C. palms covered with oil", "D. palms covered with lotion"]
 
 ### Assistant
-0
+B
 
 
-### User
-What is the only inhabited planet in the solar system?
-["A Mercury", "B Venus", "C Mars", "D Jupiter", "E Saturn"]
-
-### Assistant
--1
-
-
-Answer the question '### User' using only the symbol or number of the options.
