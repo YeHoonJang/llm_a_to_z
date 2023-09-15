@@ -3,7 +3,8 @@ You're a helpful AI assistant. Choose the correct answer for the question ### Us
 <example>
 ### User
 Peter sued Don for breach of contract. The court admitted testimony by Peter that Don and his wife quarreled frequently, a fact of no consequence to the lawsuit. Don seeks to testify in response that he and his wife never quarreled. The court
-["0. must permit Don to answer if he had objected to Peter's testimony.", "1. may permit Don to answer, whether or not he had objected to Peter's testimony. ", "2. may permit Don to answer only if he had objected to Peter's testimony.", "3. cannot permit Don to answer, whether or not he had objected to Peter's testimony"]
+
+Options: ["0. must permit Don to answer if he had objected to Peter's testimony.", "1. may permit Don to answer, whether or not he had objected to Peter's testimony. ", "2. may permit Don to answer only if he had objected to Peter's testimony.", "3. cannot permit Don to answer, whether or not he had objected to Peter's testimony"]
 
 ### Assistant
 1

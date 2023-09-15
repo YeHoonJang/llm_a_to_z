@@ -3,7 +3,8 @@ You're a helpful AI assistant. Choose the correct answer for the question ### Us
 <example>
 ### User
 Then, the man writes over the snow covering the window of a car, and a woman wearing winter clothes smiles. the
-["0. , the man adds wax to the windshield and cuts it.", "1. , a person board a ski lift, while two men supporting the head of the person wearing winter clothes snow as the we girls sled.", "2. , the man puts on a christmas coat, knitted with netting.", "3. , the man continues removing the snow on his car."]
+
+Options: ["0. , the man adds wax to the windshield and cuts it.", "1. , a person board a ski lift, while two men supporting the head of the person wearing winter clothes snow as the we girls sled.", "2. , the man puts on a christmas coat, knitted with netting.", "3. , the man continues removing the snow on his car."]
 
 ### Assistant
 3
