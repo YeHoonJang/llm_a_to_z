@@ -49,7 +49,7 @@ def create_prompt_formats(opt, sample):
 
     elif "arc" in opt.dataset.lower():
         # options = "\n".join([" ".join([str(label), text]) for label, text in zip(sample["choices"]["label"], sample["choices"]["text"])])
-        options = [" ".join([str(label), text]) for label, text in zip(sample["choices"]["label"], sample["choices"]["text"])]
+        options = [". ".join([str(label), text]) for label, text in zip(sample["choices"]["label"], sample["choices"]["text"])]
 
         # blurb = f"{INTRO_BLURB} The answer must be one of the one in the list. Answer with the number or symbol of the correct answer without any explanations and quotation mark."
         blurb = f"{INTRO_BLURB}"
@@ -59,7 +59,7 @@ def create_prompt_formats(opt, sample):
 
     elif "hellaswag" in opt.dataset.lower():
         # options = "\n".join([" ".join([str(idx), text]) for idx, text in enumerate(sample["endings"])])
-        options = [" ".join([str(idx), text]) for idx, text in enumerate(sample["endings"])]
+        options = [". ".join([str(idx), text]) for idx, text in enumerate(sample["endings"])]
 
         # blurb = f"{INTRO_BLURB} The answer must be one of the one in the list. Answer with the number or symbol of the correct answer without any explanations and quotation mark."
         blurb = f"{INTRO_BLURB}"
@@ -69,7 +69,7 @@ def create_prompt_formats(opt, sample):
 
     elif "mmlu" in opt.dataset.lower():
         # options = options = "\n".join([" ".join([str(idx), text]) for idx, text in enumerate(sample["choices"])])
-        options = options = [" ".join([str(idx), text]) for idx, text in enumerate(sample["choices"])]
+        options = options = [". ".join([str(idx), text]) for idx, text in enumerate(sample["choices"])]
 
         # blurb = f"{INTRO_BLURB} The answer must be one of the one in the list. Answer with the number or symbol of the correct answer without any explanations and quotation mark."
         blurb = f"{INTRO_BLURB}"
@@ -79,7 +79,7 @@ def create_prompt_formats(opt, sample):
 
     elif "truthful_qa" in opt.dataset.lower():
         # options = "\n".join([" ".join([str(idx), text]) for idx, text in enumerate(sample["mc1_targets"]["choices"])])
-        options = [" ".join([str(idx), text]) for idx, text in enumerate(sample["mc1_targets"]["choices"])]
+        options = [". ".join([str(idx), text]) for idx, text in enumerate(sample["mc1_targets"]["choices"])]
 
         # blurb = f"{INTRO_BLURB} The answer must be one of the one in the list. Answer with the number or symbol of the correct answer without any explanations and quotation mark."
         blurb = f"{INTRO_BLURB}"
