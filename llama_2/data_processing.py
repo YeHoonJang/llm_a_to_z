@@ -23,8 +23,10 @@ def create_prompt_formats(opt, sample):
     if opt.custom_prompt == "none":
         INTRO_BLURB = "Below is an instruction that describes a task. Write a response that appropriately completes the request."
     else:
+        print(f"Load custom prompt from {opt.custom_prompt} ...")
         with open(opt.custom_prompt, 'r', encoding='utf-8') as f:
             INTRO_BLURB = f.read()
+            print(INTRO_BLURB)
 
     # Prompt format by dataset
     if "dolly" in opt.dataset.lower():
