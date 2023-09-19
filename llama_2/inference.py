@@ -32,7 +32,7 @@ def inference(opt, model, tokenizer, test_dataset):
     generated = []
 
     generation_config = GenerationConfig(
-        temperature=opt.temperature,
+            temperature=opt.temperature,
         top_p=opt.top_p,
         top_k=opt.top_k,
     )
@@ -90,9 +90,11 @@ def main():
 
     parser.add_argument("--prompt_style", type=str, help="Prompt format style (e.g., dolly, alpaca, upstage ...)")
     parser.add_argument("--custom_prompt", type=str, default="none", help="Path of custom prompt (e.g., prompt.txt)")
+    parser.add_argument("--intro_blurb", type=str, default="none", help="Path of custom prompt (e.g., prompt.txt)")
 
     parser.add_argument("--model", type=str, required=True, help="Model Name (e.g., 'meta/llama-2-7b')")
-    parser.add_argument("--dataset", type=str, required=True, help="Dataset Name (e.g., 'wikipedia', 'tatsu-lab/alpaca')")
+    parser.add_argument("--dataset", type=str, required=True,
+                        help="Dataset Name (e.g., 'wikipedia', 'tatsu-lab/alpaca')")
     parser.add_argument("--dataset_subset", type=str, default=None, help="Subset of dataset")
     parser.add_argument("--test_split", type=str, default="test", help="Split of dataset")
     parser.add_argument("--output_dir", type=str, required=True, help="Path where output saved")
@@ -102,12 +104,17 @@ def main():
     parser.add_argument("--temperature", type=float, default=0.7, help="Generation temperature range 0.0~1.0")
     parser.add_argument("--top_k", type=int, default=50, help="Top kth words")
     parser.add_argument("--top_p", type=int, default=0.95, help="Top probability words")
+    parser.add_argument("--max_length", type=int, default=None, help="Max length of prompt")
 
-
-    parser.add_argument("--device_map", type=str, default='auto', help="Device (e.g., 'cpu', 'cuda:1', 'mps', or a GPU ordinal rank like 1)")
+    parser.add_argument("--device_map", type=str, default='auto',
+                        help="Device (e.g., 'cpu', 'cuda:1', 'mps', or a GPU ordinal rank like 1)")
     parser.add_argument("--seed", type=int, default=42, help="Random Seed")
 
     opt = parser.parse_args()
+
+    if opt.custom_prompt:
+        with open(opt.custom_prompt, 'r', encoding='utf-8') as f:
+            opt.intro_blurb = f.read()
 
     # Download Dataset
     if "dolly" in opt.dataset.lower():
@@ -150,7 +157,10 @@ def main():
     tokenizer = AutoTokenizer.from_pretrained(opt.model)
     tokenizer.pad_token = tokenizer.eos_token
 
-    max_length = get_max_length(model)
+    if opt.max_length is None:
+        max_length = get_max_length(model)
+    else:
+        max_length = opt.max_length
     test_dataset = preprocess_dataset(opt, tokenizer, max_length, opt.seed, test_dataset)
     inference(opt, model, tokenizer, test_dataset)
 

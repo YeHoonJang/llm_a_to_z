@@ -10,7 +10,7 @@ from trl import SFTTrainer
 
 from utils.config import find_all_linear_names, create_peft_config, create_bnb_config
 from utils.utils import print_trainable_parameters, get_max_length
-from llama_2.data_processing import preprocess_dataset
+from data_processing import preprocess_dataset
 
 # empty cache
 torch.cuda.empty_cache()
