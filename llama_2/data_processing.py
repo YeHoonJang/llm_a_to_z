@@ -50,7 +50,7 @@ def create_prompt_formats(opt, sample):
         options = [". ".join([str(label), text]) for label, text in zip(sample["choices"]["label"], sample["choices"]["text"])]
 
         blurb = f"{INTRO_BLURB}"
-        instruction = f"{INSTRUCTION_KEY}\nQuestion: {sample['question']}\nOptions: {str(options)}\n"
+        instruction = f"{INSTRUCTION_KEY}\nQuestion: {sample['question']}\nOptions: {str(options)}"
         input_context = ""
         response = f"{RESPONSE_KEY}\nAnswer: {sample['answerKey']}"
 
@@ -58,7 +58,7 @@ def create_prompt_formats(opt, sample):
         options = [". ".join([str(idx), text]) for idx, text in enumerate(sample["endings"])]
 
         blurb = f"{INTRO_BLURB}"
-        instruction = f"{INSTRUCTION_KEY}\nQuestion: {sample['ctx']}\nOptions: {str(options)}\n"
+        instruction = f"{INSTRUCTION_KEY}\nQuestion: {sample['ctx']}\nOptions: {str(options)}"
         input_context = ""
         response = f"{RESPONSE_KEY}\nAnswer: {sample['label']}"
 
@@ -66,7 +66,7 @@ def create_prompt_formats(opt, sample):
         options = options = [". ".join([str(idx), text]) for idx, text in enumerate(sample["choices"])]
 
         blurb = f"{INTRO_BLURB}"
-        instruction = f"{INSTRUCTION_KEY}\nQuestion: {sample['question']}\nOptions: {str(options)}\n"
+        instruction = f"{INSTRUCTION_KEY}\nQuestion: {sample['question']}\nOptions: {str(options)}"
         input_context = ""
         response = f"{RESPONSE_KEY}\nAnswer: {sample['answer']}"
 
@@ -74,7 +74,7 @@ def create_prompt_formats(opt, sample):
         options = [". ".join([str(idx), text]) for idx, text in enumerate(sample["mc1_targets"]["choices"])]
 
         blurb = f"{INTRO_BLURB}"
-        instruction = f"{INSTRUCTION_KEY}\nQuestion: {sample['question']}\nOptions: {str(options)}\n"
+        instruction = f"{INSTRUCTION_KEY}\nQuestion: {sample['question']}\nOptions: {str(options)}"
         input_context = ""
         response = f"{RESPONSE_KEY}\nAnswer: {sample['mc1_targets']['labels'].index(1)}"
 
