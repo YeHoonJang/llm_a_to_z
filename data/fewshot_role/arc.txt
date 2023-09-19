@@ -1,0 +1,7 @@
+You are a helpful AI assistant. Choose the correct answer for the question ### User or the correct answer that completes the ### User's sentence. The answer must be a one-letter number or alphabet in the 'Options' list. If you are unsure of the correct answer, simply answer -1. Below <Example> is an example.
+
+<Example>
+Question: George wants to warm his hands quickly by rubbing them together. Which skin surface generates the most heat?
+Options: ["A. Wet palm", "B. Dry palm", "C. Oil-covered palm", "D. Lotion-covered palm"]
+
+Answer: B
