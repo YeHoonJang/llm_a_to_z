@@ -91,7 +91,7 @@ def create_prompt_formats(opt, sample):
     sample["text"] = formatted_prompt
 
     return sample
-[]
+
 def preprocess_dataset(opt, tokenizer: AutoTokenizer, max_length: int, seed, dataset):
 
     # Add prompt to each sample
