@@ -50,35 +50,35 @@ def create_prompt_formats(opt, sample):
         options = [". ".join([str(label), text]) for label, text in zip(sample["choices"]["label"], sample["choices"]["text"])]
 
         blurb = f"{INTRO_BLURB}"
-        instruction = f"{INSTRUCTION_KEY}\nQuestion: {sample['question']}\nOptions: {str(options)}"
+        instruction = f"{INSTRUCTION_KEY}\n{sample['question']}\nOptions: {str(options)}"
         input_context = ""
-        response = f"{RESPONSE_KEY}\nAnswer: {sample['answerKey']}"
+        response = f"{RESPONSE_KEY}\n{sample['answerKey']}"
 
     elif "hellaswag" in opt.dataset.lower():
         options = [". ".join([str(idx), text]) for idx, text in enumerate(sample["endings"])]
 
         blurb = f"{INTRO_BLURB}"
-        instruction = f"{INSTRUCTION_KEY}\nQuestion: {sample['ctx']}\nOptions: {str(options)}"
+        instruction = f"{INSTRUCTION_KEY}\n{sample['ctx']}\nOptions: {str(options)}"
         input_context = ""
-        response = f"{RESPONSE_KEY}\nAnswer: {sample['label']}"
+        response = f"{RESPONSE_KEY}\n{sample['label']}"
 
     elif "mmlu" in opt.dataset.lower():
         options = options = [". ".join([str(idx), text]) for idx, text in enumerate(sample["choices"])]
 
         blurb = f"{INTRO_BLURB}"
-        instruction = f"{INSTRUCTION_KEY}\nQuestion: {sample['question']}\nOptions: {str(options)}"
+        instruction = f"{INSTRUCTION_KEY}\n{sample['question']}\nOptions: {str(options)}"
         input_context = ""
-        response = f"{RESPONSE_KEY}\nAnswer: {sample['answer']}"
+        response = f"{RESPONSE_KEY}\n{sample['answer']}"
 
     elif "truthful_qa" in opt.dataset.lower():
         options = [". ".join([str(idx), text]) for idx, text in enumerate(sample["mc1_targets"]["choices"])]
 
         blurb = f"{INTRO_BLURB}"
-        instruction = f"{INSTRUCTION_KEY}\nQuestion: {sample['question']}\nOptions: {str(options)}"
+        instruction = f"{INSTRUCTION_KEY}\n{sample['question']}\nOptions: {str(options)}"
         input_context = ""
-        response = f"{RESPONSE_KEY}\nAnswer: {sample['mc1_targets']['labels'].index(1)}"
+        response = f"{RESPONSE_KEY}\n{sample['mc1_targets']['labels'].index(1)}"
 
-    inference_response = f"{RESPONSE_KEY}\nAnswer: "
+    inference_response = f"{RESPONSE_KEY}\n"
     end = f"{END_KEY}"
 
     if opt.train:

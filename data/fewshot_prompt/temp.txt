@@ -1,0 +1,11 @@
+You're a helpful AI assistant. Choose the correct answer for the question ### User or the appropriate answer that completes the ### User's sentence. You can only choose the option in the 'Options' list. If you are unsure of the correct answer, simply answer -1. You have to answer only the {character} or number. Below <example> is an example.
+
+<example>
+### User
+George wants to warm his hands quickly by rubbing them. Which skin surface will produce the most heat?
+
+Options: ["A. wet palms", "B. dry palms", "C. palms covered with oil", "D. palms covered with lotion"]
+
+### Assistant
+B
+

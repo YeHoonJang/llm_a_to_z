@@ -181,7 +181,7 @@ def main():
     parser.add_argument("--valid_split", type=str, default="validation", help="Validation split of dataset")
     parser.add_argument("--output_dir", type=str, required=True, help="Path where output saved")
     parser.add_argument("--output_name", type=str, required=True, help="Name of the output directory")
-    parser.add_argument("--hub_name", type=str, required=True, help="Name of huggingface model")
+    parser.add_argument("--hub_name", type=str, required=True, help="Name of huggingface model where push the local model")
     parser.add_argument("--wandb", type=str, help="Name of the W&B run")
 
 
