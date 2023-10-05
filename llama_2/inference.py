@@ -15,7 +15,6 @@ from data_processing import preprocess_dataset
 
 # empty cache
 torch.cuda.empty_cache()
-torch.cuda.empty_cache()
 
 # remove codecarbon log
 logging.getLogger('codecarbon').setLevel(logging.CRITICAL)

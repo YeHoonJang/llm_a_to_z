@@ -47,7 +47,7 @@ def create_prompt_formats(opt, sample):
         response = f"{RESPONSE_KEY}\n{answer}"
 
     elif "arc" in opt.dataset.lower():
-        options = [". ".join([str(label), text]) for label, text in zip(sample["choices"]["label"], sample["choices"]["text"])]
+        options = [f"{label}. {text}" for label, text in zip(sample["choices"]["label"], sample["choices"]["text"])]
 
         blurb = f"{INTRO_BLURB}"
         instruction = f"{INSTRUCTION_KEY}\n{sample['question']}\nOptions: {str(options)}"
@@ -55,7 +55,7 @@ def create_prompt_formats(opt, sample):
         response = f"{RESPONSE_KEY}\n{sample['answerKey']}"
 
     elif "hellaswag" in opt.dataset.lower():
-        options = [". ".join([str(idx), text]) for idx, text in enumerate(sample["endings"])]
+        options = [f"{idx}. {text}" for idx, text in enumerate(sample["endings"])]
 
         blurb = f"{INTRO_BLURB}"
         instruction = f"{INSTRUCTION_KEY}\n{sample['ctx']}\nOptions: {str(options)}"
@@ -63,7 +63,7 @@ def create_prompt_formats(opt, sample):
         response = f"{RESPONSE_KEY}\n{sample['label']}"
 
     elif "mmlu" in opt.dataset.lower():
-        options = options = [". ".join([str(idx), text]) for idx, text in enumerate(sample["choices"])]
+        options = [f"{idx}. {text}" for idx, text in enumerate(sample["choices"])]
 
         blurb = f"{INTRO_BLURB}"
         instruction = f"{INSTRUCTION_KEY}\n{sample['question']}\nOptions: {str(options)}"
@@ -71,7 +71,7 @@ def create_prompt_formats(opt, sample):
         response = f"{RESPONSE_KEY}\n{sample['answer']}"
 
     elif "truthful_qa" in opt.dataset.lower():
-        options = [". ".join([str(idx), text]) for idx, text in enumerate(sample["mc1_targets"]["choices"])]
+        options = [f"{idx}. {text}" for idx, text in enumerate(sample["mc1_targets"]["choices"])]
 
         blurb = f"{INTRO_BLURB}"
         instruction = f"{INSTRUCTION_KEY}\n{sample['question']}\nOptions: {str(options)}"
