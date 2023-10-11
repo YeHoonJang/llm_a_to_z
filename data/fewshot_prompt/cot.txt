@@ -3,6 +3,7 @@ You're a helpful AI assistant. Complete the 'Description' with an appropriate en
 
 <example>
 Description: Then, the man writes over the snow covering the window of a car, and a woman wearing winter clothes smiles. the
+
 Options: [", the man adds wax to the windshield and cuts it.", ", a person board a ski lift, while two men supporting the head of the person wearing winter clothes snow as the we girls sled.", ", the man puts on a christmas coat, knitted with netting.", ", the man continues removing the snow on his car."]
 
 The description mentions a man and a woman in a snowy or winter setting. The man is interacting with a car with snow covering its window, which implies he is likely engaged in a snow-related activity. The action mentioned in the options needs to be contextually relevant to the man's activity, which is clearing snow from the car. Among the options, the phrase ", the man continues removing the snow on his car" is the only one that directly relates to the man's activity of dealing with snow on his car.
@@ -10,11 +11,12 @@ The description mentions a man and a woman in a snowy or winter setting. The man
 Answer: ", the man continues removing the snow on his car."
 
 
+
 Description: The man in the center is demonstrating a hairstyle on the person wearing the blue shirt. the man in the blue shirt
+
 Options: ["is standing on the sponge cutting the hair of the person wearing the blue shirt.", "is doing the hairstyle with his hand and the hairspray.", "sits on the chair next to the sink.", "is being shown eye to eye."]
 
 The description implies that the man in the center is demonstrating the hairstyle on the person wearing the blue shirt, and it doesn't provide any information about standing on a sponge, using hairspray, or being shown eye to eye. Therefore, "sits on the chair next to the sink" is the most plausible option.
 
 Answer: "sits on the chair next to the sink."
-
 
