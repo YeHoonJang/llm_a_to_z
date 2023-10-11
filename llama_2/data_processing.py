@@ -55,12 +55,12 @@ def create_prompt_formats(opt, sample):
         response = f"{RESPONSE_KEY}\n{sample['answerKey']}"
 
     elif "hellaswag" in opt.dataset.lower():
-        options = [f"{text}" for text in enumerate(sample["endings"])]
+        options = [text for text in sample["endings"]]
 
         blurb = f"{INTRO_BLURB}"
-        instruction = f"Description: {INSTRUCTION_KEY}\n{sample['ctx']}\n\nOptions: {str(options)}"
+        instruction = f"{INSTRUCTION_KEY}\nDescription: {sample['ctx']}\n\nOptions: {options}"
         input_context = ""
-        response = f"Answer: {RESPONSE_KEY}{sample['endings'][int(sample['label'])]}"
+        response = f"{RESPONSE_KEY}\nAnswer: {sample['endings'][int(sample['label'])]}"
 
     elif "mmlu" in opt.dataset.lower():
         options = [f"{idx}. {text}" for idx, text in enumerate(sample["choices"])]

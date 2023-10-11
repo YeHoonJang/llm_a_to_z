@@ -31,7 +31,7 @@ def inference(opt, model, tokenizer, test_dataset):
     generated = []
 
     generation_config = GenerationConfig(
-            temperature=opt.temperature,
+        temperature=opt.temperature,
         top_p=opt.top_p,
         top_k=opt.top_k,
     )
@@ -53,7 +53,6 @@ def inference(opt, model, tokenizer, test_dataset):
         print(decoded_output)
     else:
         for i in tqdm(test_dataset["text"]):
-            print(i)
             inputs = tokenizer(i, return_tensors="pt")
             input_ids = inputs["input_ids"].to(device)
 
@@ -120,7 +119,7 @@ def main():
     if "dolly" in opt.dataset.lower():
         # dolly dataset has only train splits
         test_dataset = load_dataset(opt.dataset, name=opt.dataset_subset, split=f"train[:95%]")
-    elif "hellaswaq" in opt.dataset.lower():
+    elif "hellaswag" in opt.dataset.lower():
         # hellaswaq test dataset has no labels
         test_dataset = load_dataset(opt.dataset, name=opt.dataset_subset, split=f"validation")
     elif "truthful_qa" in opt.dataset.lower():
