@@ -8,9 +8,9 @@ from utils.utils import preprocess_batch
 # Pre-processing Dataset
 def create_prompt_formats(opt, sample):
     if opt.prompt_style == "upstage":
-        INSTRUCTION_KEY = "### User:"
-        INPUT_KEY = "### System:"
-        RESPONSE_KEY = "### Assistant:"
+        INSTRUCTION_KEY = "### User"
+        INPUT_KEY = "### System"
+        RESPONSE_KEY = "### Assistant"
         END_KEY = ""
 
     else:
