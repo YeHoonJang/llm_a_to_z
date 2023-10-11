@@ -53,6 +53,7 @@ def inference(opt, model, tokenizer, test_dataset):
         print(decoded_output)
     else:
         for i in tqdm(test_dataset["text"]):
+            print(i)
             inputs = tokenizer(i, return_tensors="pt")
             input_ids = inputs["input_ids"].to(device)
 
