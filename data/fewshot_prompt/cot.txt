@@ -18,9 +18,3 @@ The description implies that the man in the center is demonstrating the hairstyl
 Answer: "sits on the chair next to the sink."
 
 
-
-### User
-Description: A female chef in white uniform shows a stack of baking pans in a large kitchen presenting them. The pans are filled with pastries and loaded into the oven. a knife
-Options: ["is seen moving on a board and cutting out its contents.", "hits the peeled cheesecake, followed by sliced custard and still cooked ice cream.", "etches a shape into the inside of the baked pans.", "is used to cut cylinder shaped dough into rounds."]
-
-### Assistant
