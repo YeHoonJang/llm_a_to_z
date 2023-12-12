@@ -11,7 +11,7 @@ my_llama2/
 .idea/
 flagged/
 outputs/
-data/
+data/*
 out/
 7B/
 13B/
