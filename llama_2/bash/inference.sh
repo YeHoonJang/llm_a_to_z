@@ -12,4 +12,8 @@ CUDA_VISIBLE_DEVICES=7 python /home/yehoon/workspace/llm_a_to_z/llama_2/inferenc
 
 
 # Inference once
+<<<<<<< HEAD
 python /home/yehoon/workspace/llm_a_to_z/llama_2/inference.py --inference --model="meta-llama/Llama-2-13b-hf" --dataset="ai2_arc" --dataset_subset="ARC-Easy" --test_split="test" --prompt_style="upstage" --custom_prompt="../data/fewshot_prompt/arc.txt" --output_dir="/home/yehoon/workspace/outputs/" --output_name="0920_llama_13b" --generated_name="13b_test.csv" --inference_once --prompt="../data/prompt_once.txt"
+=======
+python /home/yehoon/workspace/llm_a_to_z/llama_2/inference.py --inference --model="meta-llama/Llama-2-7b-hf" --dataset="hellaswag" --test_split="validation" --prompt_style="upstage" --custom_prompt="/home/yehoon/workspace/llm_a_to_z/data/fewshot_prompt/temp.txt" --output_dir="/home/yehoon/workspace/outputs/" --output_name="0907_ft_llama2_upstage_way" --generated_name="hella_test.csv" --inference_once --prompt="/home/yehoon/workspace/llm_a_to_z/data/fewshot_prompt/temp.txt"
+>>>>>>> 3b1f16e (update)
